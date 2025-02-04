@@ -17,4 +17,4 @@ services:
 networks:
   aipfs-agent:
     name: aipfs-agent
-    driver: host
+    driver: bridge
