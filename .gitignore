@@ -45,3 +45,6 @@ artifacts
 
 # IDE
 .vscode
+
+# Local
+agent/data
