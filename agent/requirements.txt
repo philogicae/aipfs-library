@@ -1,0 +1,7 @@
+python-dotenv
+requests
+robyn
+SQLAlchemy
+openai
+addict
+coloredlogs

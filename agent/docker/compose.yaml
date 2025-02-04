@@ -1,0 +1,20 @@
+name: aipfs-agent
+
+services:
+  aipfs-agent-backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: aipfs-agent-backend
+    container_name: aipfs-agent-backend
+    ports:
+      - 17890:1789
+    env_file:
+      - ../.env
+    networks:
+      - aipfs-agent
+
+networks:
+  aipfs-agent:
+    name: aipfs-agent
+    driver: host
