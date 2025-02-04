@@ -21,4 +21,4 @@ COPY . .
 
 EXPOSE 1789
 
-CMD robyn main.py --processes=1 --workers=3
+CMD robyn src/main.py --processes=4 --workers=12

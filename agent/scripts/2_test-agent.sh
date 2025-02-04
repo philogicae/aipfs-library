@@ -1,1 +1,1 @@
-robyn main.py --dev
+robyn src/main.py --dev

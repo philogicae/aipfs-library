@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 coloredlogs.install()
-logger = getLogger("app")
+logger = getLogger("agent")
 
 from robyn import ALLOW_CORS, Request, Response, Robyn, status_codes
 
