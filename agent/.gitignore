@@ -1,0 +1,18 @@
+# ignore pre compiled binaries
+*.so
+dist/
+
+# python cache
+*__pycache__
+*tags
+
+# DS_Store
+*.DS_Store
+
+# local env files
+.env
+.env.local
+.fuse_hidden*
+
+# local
+data
