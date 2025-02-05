@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+	@apply antialiased;
+}
+
+:root {
+	--background: #ffffff;
+	--foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--background: #0a0a0a;
+		--foreground: #ededed;
+	}
+}
+
+html {
+	@apply flex w-full h-full;
+}
+
+body {
+	@apply w-full h-full overflow-hidden;
+	color: var(--foreground);
+	background: var(--background);
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+	.text-balance {
+		text-wrap: balance;
+	}
+}
