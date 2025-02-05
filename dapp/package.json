@@ -10,7 +10,7 @@
     "dev": "next dev -H 0.0.0.0 --port 3000 --turbo",
     "build": "pnpm run lint && next build",
     "start": "next start",
-    "lint": "biome check --write app",
+    "lint": "pnpm exec biome check --write app",
     "serve": "pnpm dlx serve@latest out -p 3000",
     "clean": "rimraf node_modules && pnpm install"
   },
