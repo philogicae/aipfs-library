@@ -9,8 +9,30 @@ coloredlogs.install()
 logger = getLogger("agent")
 
 from robyn import ALLOW_CORS, Request, Response, Robyn, status_codes
+from robyn.openapi import Components, OpenAPI, OpenAPIInfo
+from robyn.types import Body, JSONResponse
+from scraper_test import find_torrents
 
-app = Robyn(__file__)
+
+class Completion(Body):
+    prompt: str
+
+
+class CompletionResponse(JSONResponse):
+    result: dict
+
+
+app = Robyn(
+    __file__,
+    openapi=OpenAPI(
+        info=OpenAPIInfo(
+            title="AIPFS Library Agent",
+            description="Decentralized media library managed by AI agents indexing torrents and curated by the community",
+            version="1.0.0",
+            components=Components(),
+        ),
+    ),
+)
 ALLOW_CORS(app, origins=["*"])
 
 ROOT = Path(__file__).parent.resolve()
@@ -46,16 +68,14 @@ async def index():
 
 @app.options("/api/completion")
 @app.post("/api/completion")
-async def completion(request: Request):
+async def completion(request: Request, _: Completion):
     if request.method == "OPTIONS":
         return Response(
             status_code=status_codes.HTTP_200_OK, headers={}, description="OK"
         )
-    return Response(
-        status_code=status_codes.HTTP_200_OK,
-        headers={},
-        description=dict(received=request.json().get("prompt")),
-    )
+    prompt = request.json().get("prompt")
+    torrents = await find_torrents(prompt)
+    return CompletionResponse(result=torrents)
 
 
 if __name__ == "__main__":
