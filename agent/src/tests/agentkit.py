@@ -11,7 +11,7 @@ from rich import print
 
 load_dotenv()
 
-data_dir = path.join(path.dirname(path.dirname(__file__)), "data")
+data_dir = path.join(path.dirname(path.dirname(path.dirname(__file__))), "data")
 makedirs(data_dir, exist_ok=True)
 wallet_data_file = path.join(data_dir, "wallet_data.txt")
 

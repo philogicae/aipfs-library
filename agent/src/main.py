@@ -11,7 +11,8 @@ logger = getLogger("agent")
 from robyn import ALLOW_CORS, Request, Response, Robyn, status_codes
 from robyn.openapi import Components, OpenAPI, OpenAPIInfo
 from robyn.types import Body, JSONResponse
-from scraper_test import find_torrents
+from tests.ipfs import add_to_ipfs
+from tests.scraper import find_torrents
 
 
 class Completion(Body):
@@ -76,6 +77,20 @@ async def completion(request: Request, _: Completion):
     prompt = request.json().get("prompt")
     torrents = await find_torrents(prompt)
     return CompletionResponse(result=torrents)
+
+
+@app.get("/pin")
+async def pin():
+    cid = await add_to_ipfs(__file__)
+    if cid:
+        return Response(
+            status_code=status_codes.HTTP_200_OK,
+            headers={"Location": f"https://ipfs.io/ipfs/{cid}"},
+            description=cid,
+        )
+    return Response(
+        status_code=status_codes.HTTP_404_NOT_FOUND, headers={}, description="Error"
+    )
 
 
 if __name__ == "__main__":

@@ -8,3 +8,4 @@ crawl4ai
 openai
 pydantic
 rich
+aioipfs
