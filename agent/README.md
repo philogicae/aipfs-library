@@ -15,7 +15,7 @@
 
 ```bash
 cd agent
-./1_install-env.sh
+./1_install-agent.sh
 ```
 
 ## Scripts
