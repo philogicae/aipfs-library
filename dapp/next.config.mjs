@@ -1,5 +1,5 @@
-import { createRequire } from "node:module";
-const version = createRequire(import.meta.url)("./package.json").version;
+import { createRequire } from "node:module"
+const version = createRequire(import.meta.url)("./package.json").version
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -24,6 +24,6 @@ const nextConfig = {
       },
     },
   },
-};
+}
 
-export default nextConfig;
+export default nextConfig

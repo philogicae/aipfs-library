@@ -7,30 +7,21 @@
 }
 
 :root {
-	--background: #ffffff;
-	--foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-	:root {
-		--background: #0a0a0a;
-		--foreground: #ededed;
-	}
+	--background: #0d0d0d;
+	--foreground: #ffffff;
 }
 
 html {
-	@apply flex w-full h-full;
+	@apply dark flex w-full h-full;
+	background: var(--background);
 }
 
 body {
-	@apply w-full h-full overflow-hidden;
+	@apply dark h-full w-full overflow-hidden text-white;
 	color: var(--foreground);
 	background: var(--background);
-	font-family: Arial, Helvetica, sans-serif;
 }
 
-@layer utilities {
-	.text-balance {
-		text-wrap: balance;
-	}
+.halo-text {
+	text-shadow: 0 0 3px #ffffff;
 }

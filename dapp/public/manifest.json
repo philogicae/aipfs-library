@@ -1,0 +1,10 @@
+{
+	"short_name": "aipfs-library",
+	"name": "aipfs-library",
+	"description": "Decentralized media library managed by AI agents indexing torrents and curated by the community",
+	"start_url": ".",
+	"display": "standalone",
+	"theme_color": "#ffffff",
+	"background_color": "#000000",
+	"icons": []
+}
