@@ -1,3 +1,4 @@
+import Message from "@components/elements/Message"
 import { useState, useRef, useEffect } from "react"
 import { FaRegWindowRestore, FaXmark, FaRegWindowMinimize } from "react-icons/fa6"
 
@@ -5,6 +6,7 @@ export default function Terminal() {
   const [value, setValue] = useState("")
   const [history, setHistory] = useState<string[]>(['How can I help you today?'])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   const adjustHeight = () => {
     const textarea = textareaRef.current
@@ -16,7 +18,6 @@ export default function Terminal() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setValue(e.target.value)
-    adjustHeight()
   }
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -26,14 +27,16 @@ export default function Terminal() {
       if (trimmedValue) {
         setHistory([...history, trimmedValue, 'How can I help you today?'])
         setValue('')
-        adjustHeight()
       }
     }
   }
 
   useEffect(() => {
-    adjustHeight()
-  }, [])
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+      adjustHeight()
+    }
+  }, [history, value])
 
   return (
     <div className="flex flex-col sm:text-3xl font-mono w-full h-full justify-between border border-green-300 rounded-md shadow-sm shadow-green-200">
@@ -45,15 +48,17 @@ export default function Terminal() {
           <FaXmark className="text-lg" />
         </div>
       </div>
-      <div className="flex flex-col w-full h-full items-start justify-start halo-text pl-3 py-2 text-sm">
-        {history.map((item, index) => {
-          const msgId = `msg-${index}`
-          return (index % 2 === 0) ? (
-            <span key={msgId} className="py-2">{'Agent: '}{item}</span>
-          ) : (
-            <span key={msgId} className="py-2">{'You: '}{item}</span>
-          )
-        })}
+      <div 
+        ref={messagesContainerRef}
+        className="flex flex-col w-full h-full items-start justify-start pl-3 py-2 text-sm overflow-y-auto scrollbar-hide"
+      >
+        {history.map((item, index) => (
+          <Message 
+            key={`msg-${index}`}
+            text={item}
+            isAgent={index % 2 === 0}
+          />
+        ))}
       </div>
       <div className="flex flex-row w-full items-start halo-text text-md sm:text-lg bg-gray-900 p-2 pt-1">
         <span className="text-xl sm:text-2xl pr-2 pb-0.5">{'>'}</span>
