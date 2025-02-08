@@ -60,15 +60,8 @@ async def log_response(response: Response):
     return response
 
 
-@app.get("/")
-async def index():
-    return Response(
-        status_code=status_codes.HTTP_200_OK, headers={}, description="Hello world!"
-    )
-
-
-@app.options("/api/completion")
-@app.post("/api/completion")
+@app.options("/v1/chat/completions")
+@app.post("/v1/chat/completions")
 async def completion(request: Request, _: Completion):
     if request.method == "OPTIONS":
         return Response(
