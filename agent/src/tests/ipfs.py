@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 coloredlogs.install()
-logger = getLogger("agent")
+logger = getLogger("ipfs")
 
 from aioipfs import AsyncIPFS
 
@@ -16,11 +16,11 @@ from aioipfs import AsyncIPFS
 async def add_to_ipfs(
     file_path: str, host: str = getenv("IPFS_HOST", "ipfs-node"), port: int = 5001
 ) -> str:
-    if not Path(file_path).is_file():
-        logger.info(f"Error: File not found: {file_path}")
+    if not Path(file_path).exists():
+        logger.error(f"File not found: {file_path}")
         return None
 
-    cid = None
+    cids = []
     try:
         client = AsyncIPFS(host=host, port=port)
         logger.info(f"Connecting to IPFS node at {host}:{port}...")
@@ -30,18 +30,19 @@ async def add_to_ipfs(
                 version = await ipfs.core.version()
                 logger.info(f"Connected to IPFS node version: {version['Version']}")
                 logger.info(f"Adding file: {file_path}")
-                async for added in ipfs.core.add(file_path):
+                cids = []
+                async for added in ipfs.core.add(
+                    file_path, quieter=True, recursive=True
+                ):
                     cid = added["Hash"]
-                    logger.info(f"File added with CID: {cid}")
-                    async for _ in ipfs.pin.add(cid):
-                        pass
-                    logger.info("File pinned successfully")
+                    logger.info(f"File added/pinned with CID: {cid}")
+                    cids.append(cid)
             except Exception as e:
                 logger.info(f"Failed to connect to IPFS node: {str(e)}")
     except Exception as e:
         logger.info(f"Failed to interact with IPFS node: {str(e)}")
         logger.info(f"Error type: {type(e).__name__}")
-    return cid
+    return cids
 
 
 async def main():

@@ -23,9 +23,9 @@ coloredlogs.install()
 logger = getLogger("scraper")
 
 SOURCES = {
-    "thepiratebay0.org": dict(
-        search="https://thepiratebay0.org/search/{query}/1/99/0",
-        filter=r"<?https:/{1,2}thepiratebay0\.org[a-zA-Z0-9\-.\/\?_=\&%]*>?",
+    "thepiratebay10.info": dict(
+        search="https://thepiratebay10.info/search/{query}/1/99/0",
+        filter=r"<?https:/{1,2}thepiratebay10\.info[a-zA-Z0-9\-.\/\?_=\&%]*>?",
     )
 }
 
@@ -73,7 +73,7 @@ class Results(BaseModel):
 
 async def find(query: str, source: Optional[str] = None, max_chars=10000):
     if source is None:
-        source = "thepiratebay0.org"
+        source = "thepiratebay10.info"
 
     browser_config = BrowserConfig()
     run_config = CrawlerRunConfig()
