@@ -9,6 +9,8 @@ services:
     container_name: aipfs-agent-backend
     ports:
       - "17890:1789"
+    volumes:
+      - shared_data:/shared
     env_file:
       - ../.env
     restart: unless-stopped
@@ -29,6 +31,7 @@ services:
       - "8080:8080"  # IPFS Gateway
     volumes:
       - ipfs_data:/data/ipfs
+      - shared_data:/shared
     environment:
       - IPFS_PROFILE=server  # Optimize for server deployment
       - IPFS_PATH=/data/ipfs
@@ -48,4 +51,5 @@ networks:
     driver: bridge
 
 volumes:
+  shared_data:
   ipfs_data:
