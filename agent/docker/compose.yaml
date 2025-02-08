@@ -25,12 +25,16 @@ services:
   ipfs-node:
     image: ipfs/kubo:latest
     container_name: ipfs-node
+    entrypoint: [ "/bin/sh", "-c", "/sbin/tini -- /usr/local/bin/start_ipfs version; ipfs config --json Routing.AcceleratedDHTClient true; ipfs config --json Swarm.EnableAutoRelay true; cat /data/ipfs/config; chmod 777 /data/ipfs/config; /sbin/tini -- /usr/local/bin/start_ipfs daemon --migrate --enable-gc" ]
+    # To use Filestore: Experimental.FilestoreEnabled
     ports:
       - "4001:4001"  # IPFS swarm
+      - "4001:4001/udp" # IPFS swarm UDP
       - "5001:5001"  # IPFS API
       - "8080:8080"  # IPFS Gateway
     volumes:
       - ipfs_data:/data/ipfs
+      - ipfs_staging:/export
       - shared_data:/shared
     environment:
       - IPFS_PROFILE=server  # Optimize for server deployment
@@ -53,3 +57,4 @@ networks:
 volumes:
   shared_data:
   ipfs_data:
+  ipfs_staging:
