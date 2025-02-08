@@ -76,12 +76,12 @@ def run_chat_mode(agent_executor, config):
                 {"messages": [HumanMessage(content=user_input)]}, config
             ):
                 if "agent" in chunk:
+                    print("AGENT -------------")
                     print(chunk["agent"]["messages"][0].content)
                 elif "tools" in chunk:
+                    print("TOOLS -------------")
                     print(chunk["tools"]["messages"][0].content)
-                print("-------------------")
         except KeyboardInterrupt:
-            print("\nGoodbye!")
             exit(0)
 
 

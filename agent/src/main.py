@@ -1,4 +1,5 @@
 from logging import getLogger
+from os import listdir
 from pathlib import Path
 
 import coloredlogs
@@ -13,14 +14,15 @@ from robyn.openapi import Components, OpenAPI, OpenAPIInfo
 from robyn.types import Body, JSONResponse
 from tests.ipfs import add_to_ipfs
 from tests.scraper import find_torrents
+from tests.torrent import download_torrent
 
 
 class Completion(Body):
     prompt: str
 
 
-class CompletionResponse(JSONResponse):
-    result: dict
+class MagnetRequest(Body):
+    magnet: str
 
 
 app = Robyn(
@@ -69,10 +71,10 @@ async def completion(request: Request, _: Completion):
         )
     prompt = request.json().get("prompt")
     torrents = await find_torrents(prompt)
-    return CompletionResponse(result=torrents)
+    return JSONResponse(result=torrents)
 
 
-@app.get("/pin")
+@app.get("/v1/pin")
 async def pin():
     cid = await add_to_ipfs(__file__)
     if cid:
@@ -84,6 +86,32 @@ async def pin():
     return Response(
         status_code=status_codes.HTTP_404_NOT_FOUND, headers={}, description="Error"
     )
+
+
+@app.options("/v1/download")
+@app.post("/v1/download")
+async def download(request: Request, _: MagnetRequest):
+    if request.method == "OPTIONS":
+        return Response(
+            status_code=status_codes.HTTP_200_OK, headers={}, description="OK"
+        )
+    magnet = request.json().get("magnet")
+    await download_torrent(magnet)
+    return JSONResponse({"result": "OK"})
+
+
+@app.get("/v1/files")
+async def list_files():
+    download_dir = "/shared/downloads"
+    try:
+        return JSONResponse({"files": listdir(download_dir)})
+    except Exception as e:
+        logger.error(f"Error listing files: {str(e)}")
+        return Response(
+            status_code=status_codes.HTTP_500_INTERNAL_SERVER_ERROR,
+            headers={},
+            description=f"Error listing files: {str(e)}",
+        )
 
 
 if __name__ == "__main__":

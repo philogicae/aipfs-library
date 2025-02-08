@@ -183,6 +183,6 @@ async def search(text: str, source: Optional[str] = None, llm: Optional[str] = N
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        logger.error("Usage: python main.py <search>")
+        logger.error("Usage: python src/tests/scraper.py <search>")
         exit(1)
     asyncio.run(search(get_query()))
