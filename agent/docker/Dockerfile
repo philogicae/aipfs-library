@@ -62,4 +62,4 @@ COPY . .
 
 EXPOSE 1789
 
-CMD ["python", "-m", "robyn", "src/main.py", "--fast"]
+CMD ["python", "-m", "robyn", "src/server.py", "--fast"]

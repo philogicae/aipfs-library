@@ -49,7 +49,7 @@ def initialize_agent():
             llm,
             tools=tools,
             checkpointer=memory,
-            state_modifier=(
+            prompt=(
                 "You are a helpful agent that can interact onchain using the Coinbase Developer Platform AgentKit. "
                 "You are empowered to interact onchain using your tools. If you ever need funds, you can request "
                 "them from the faucet if you are on network ID 'base-sepolia'. If not, you can provide your wallet "
