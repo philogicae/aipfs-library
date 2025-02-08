@@ -4,20 +4,11 @@ import Home from '@components/frames/Home'
 import Loading from '@components/frames/Loading'
 import NotFound from '@components/frames/NotFound'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { createHashRouter, redirect } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
 
 const hydrateFallbackElement = <Loading />
-const hashRouter = createHashRouter([
-	{
-		path: '',
-		element: <Home />,
-		hydrateFallbackElement,
-	},
-	{ path: '404', element: <NotFound />, hydrateFallbackElement },
-	{ path: '*', loader: async () => redirect('404'), hydrateFallbackElement },
-])
 
 export default function Router() {
 	const router = useRouter()
@@ -34,9 +25,26 @@ export default function Router() {
 		}
 	}
 
+	const [hashRouter, setHashRouter] = useState<any>()
 	useEffect(() => {
 		console.log(`appVersion v${process.env.version}`)
+		setHashRouter(
+			createHashRouter([
+				{
+					path: '',
+					element: <Home />,
+					hydrateFallbackElement,
+				},
+				{ path: '404', element: <NotFound />, hydrateFallbackElement },
+				{
+					path: '*',
+					loader: async () => redirect('404'),
+					hydrateFallbackElement,
+				},
+			])
+		)
 	}, [])
 
+	if (!hashRouter) return <Loading />
 	return <RouterProvider router={hashRouter} />
 }
