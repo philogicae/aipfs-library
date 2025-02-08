@@ -1,6 +1,7 @@
 from logging import getLogger
 from os import listdir, path
 from pathlib import Path
+from shutil import rmtree
 
 import coloredlogs
 from dotenv import load_dotenv
@@ -25,7 +26,7 @@ class MagnetRequest(Body):
     magnet: str
 
 
-class PinRequest(Body):
+class FileRequest(Body):
     filename: str
 
 
@@ -90,9 +91,9 @@ async def download(request: Request, _: MagnetRequest):
     return JSONResponse({"result": "OK"})
 
 
-@app.options("/v1/pin")
-@app.post("/v1/pin")
-async def pin(request: Request, _: PinRequest):
+@app.options("/v1/file/pin")
+@app.post("/v1/file/pin")
+async def file_pin(request: Request, _: FileRequest):
     if request.method == "OPTIONS":
         return Response(
             status_code=status_codes.HTTP_200_OK, headers={}, description="OK"
@@ -106,15 +107,12 @@ async def pin(request: Request, _: PinRequest):
             headers={},
             description="File not found",
         )
-    cids = await add_to_ipfs(file_path)
-    if cids:
+    files = await add_to_ipfs(file_path)
+    if files:
         return JSONResponse(
             status_code=status_codes.HTTP_200_OK,
             headers={},
-            description={
-                "cids": cids,
-                "urls": [f"https://ipfs.io/ipfs/{cid}" for cid in cids],
-            },
+            description={"files": files},
         )
     return JSONResponse(
         status_code=status_codes.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -123,8 +121,30 @@ async def pin(request: Request, _: PinRequest):
     )
 
 
-@app.get("/v1/files")
-async def list_files():
+@app.options("/v1/file/rm")
+@app.post("/v1/file/rm")
+async def file_rm(request: Request, _: FileRequest):
+    if request.method == "OPTIONS":
+        return Response(
+            status_code=status_codes.HTTP_200_OK, headers={}, description="OK"
+        )
+    filename = request.json().get("filename")
+    download_dir = "/shared/downloads"
+    file_path = Path(path.join(download_dir, filename))
+    if file_path.exists():
+        if file_path.is_dir():
+            rmtree(file_path.as_posix())
+        else:
+            file_path.unlink()
+    return JSONResponse(
+        status_code=status_codes.HTTP_200_OK,
+        headers={},
+        description="OK",
+    )
+
+
+@app.get("/v1/file/list")
+async def file_list():
     download_dir = "/shared/downloads"
     try:
         return JSONResponse({"files": listdir(download_dir)})
