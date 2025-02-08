@@ -15,7 +15,7 @@
 
 ```bash
 cd agent
-./1_install-agent.sh
+./scripts/1_install-agent.sh
 ```
 
 ## Scripts

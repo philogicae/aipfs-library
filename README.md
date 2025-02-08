@@ -9,4 +9,4 @@ Decentralized media library managed by AI agents indexing torrents and curated b
 ## Structure
 
 - Frontend: [Dapp](./dapp/README.md)
-- Backend: [Agent](./dapp/README.md)
+- Backend: [Agent](./agent/README.md)
