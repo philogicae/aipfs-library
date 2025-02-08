@@ -20,36 +20,33 @@ async def add_to_ipfs(
         logger.error(f"File not found: {file_path}")
         return None
 
-    cids = []
+    files = []
     try:
         client = AsyncIPFS(host=host, port=port)
         logger.info(f"Connecting to IPFS node at {host}:{port}...")
-
         async with client as ipfs:
             try:
-                version = await ipfs.core.version()
-                logger.info(f"Connected to IPFS node version: {version['Version']}")
                 logger.info(f"Adding file: {file_path}")
-                cids = []
+                files = {}
                 async for added in ipfs.core.add(
-                    file_path, quieter=True, recursive=True
+                    file_path, pin=True, recursive=True, quieter=True
                 ):
-                    cid = added["Hash"]
-                    logger.info(f"File added/pinned with CID: {cid}")
-                    cids.append(cid)
+                    logger.info(f"File added/pinned: {added}")
+                    files[added["Name"]] = added["Hash"]
             except Exception as e:
                 logger.info(f"Failed to connect to IPFS node: {str(e)}")
     except Exception as e:
         logger.info(f"Failed to interact with IPFS node: {str(e)}")
         logger.info(f"Error type: {type(e).__name__}")
-    return cids
+    return files
 
 
 async def main():
     test_file = __file__
-    cid = await add_to_ipfs(test_file)
-    if cid:
-        logger.info(f"https://ipfs.io/ipfs/{cid}")
+    files = await add_to_ipfs(test_file)
+    if files:
+        for file in files:
+            logger.info(f"{file['Name']}: https://ipfs.io/ipfs/{file['Hash']}")
     else:
         logger.info("\nFailed to add file to IPFS")
 
