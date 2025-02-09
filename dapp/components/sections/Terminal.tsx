@@ -4,6 +4,7 @@ import Background from '@components/layout/Background'
 import { useAppState } from '@components/context/AppState'
 import useAgent from '@components/hooks/useAgent'
 import Message from '@components/elements/Message'
+import { WalletDefault } from '@coinbase/onchainkit/wallet'
 
 const adjustHeight = (element: RefObject<HTMLTextAreaElement>) => {
 	const el = element.current
@@ -54,6 +55,7 @@ export default function Terminal() {
 	return (
 		<TerminalFrame subTitle="terminal">
 			<Background />
+			<WalletDefault />
 			<div
 				ref={messagesContainerRef}
 				className="flex flex-col w-full h-full items-start justify-start p-3 sm:py-4 sm:px-6 gap-3 text-sm overflow-y-auto scrollbar-hide z-40"
