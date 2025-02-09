@@ -1,22 +1,20 @@
-import { cn, type ClassName } from '@components/utils/tw';
-import type { TorrentResultsType } from '@components/elements/TorrentList';
-import TorrentList from './TorrentList';
+import { cn, type ClassName } from '@components/utils/tw'
+import type { TorrentResultsType } from '@components/elements/TorrentList'
+import TorrentList from '@components/elements/TorrentList'
 
 export default function Message({
 	msg,
-  className,
+	className,
 }: { msg: { role: string; content: any }, className?: ClassName }) {
-
 	try {
-		const torrentList = JSON.parse(msg.content) as TorrentResultsType
-		if (torrentList.torrentList.length !== 0) {
-			return <TorrentList torrents={torrentList} />
+		const torrent_data =
+			typeof msg.content === 'string' &&
+			msg.content.startsWith('{') &&
+			JSON.parse(msg.content)
+		if (typeof torrent_data !== 'boolean' && torrent_data?.torrents?.length > 0) {
+			return <TorrentList torrent_data={torrent_data as TorrentResultsType} />
 		}
-		console.log(torrentList)
-	} catch (e) {
-		console.log(e)
-	}
-	
+	} catch (e) {}
 	return (
 		<div
 			className={cn(
@@ -27,7 +25,7 @@ export default function Message({
 			<span
 				className={cn(
 					"font-semibold mr-1.5",
-					msg.role === "agent" ? "text-cyan-200" : "text-orange-200",
+					msg.role === "agent" ? "text-cyan-200" : msg.role === "you" ? "text-orange-200" : "text-violet-300",
 				)}
 			>
 				{`${msg.role}:`}

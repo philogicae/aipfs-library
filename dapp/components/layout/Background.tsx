@@ -9,7 +9,7 @@ export default function Background() {
 		<div
 			className={cn(
 				'absolute flex w-full h-full justify-center items-center transition-opacity duration-1000 pb-8 z-0',
-				hasTyped ? 'opacity-15' : 'opacity-70'
+				hasTyped ? 'opacity-5' : 'opacity-60'
 			)}
 		>
 			<Image src="logo.png" alt="logo" radius="sm" width={400} />

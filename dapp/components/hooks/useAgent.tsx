@@ -34,22 +34,35 @@ export default function useAgent() {
 	const { query } = useManager()
 
 	return useCallback(
-		async (message: string, history: any): Promise<undefined> => {
+		async (
+			message: string,
+			history: Record<
+				string,
+				{
+					role: string
+					content: string
+				}[]
+			>,
+		): Promise<undefined> => {
 			setIsLoading(true)
-      const chat_id = profile.chat_ids.at(-1) as string;
-			const response = await query(call, {
-				user_id: profile.user_id,
-				chat_id,
-				message,
+			const chat_id = profile.chat_ids.at(-1) as string
+			const response = await query({
+				func: call,
+				data: {
+					user_id: profile.user_id,
+					chat_id,
+					message,
+				},
+				max_retries: 1,
 			})
 			if (response) {
-        setHistory({
-          ...history,
-          [chat_id]: [
-            ...history[chat_id],
-            { role: 'agent', content: response.message },
-          ],
-        })
+				setHistory({
+					...history,
+					[chat_id]: [
+						...history[chat_id],
+						{ role: 'agent', content: response.message },
+					],
+				})
 			}
 			setIsLoading(false)
 		},
