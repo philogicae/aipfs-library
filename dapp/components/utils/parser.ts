@@ -1,14 +1,15 @@
-export function cutStringByHtmlTag(inputString: string, htmlTagList: string[]): [string, string] {
-    for (const tag of htmlTagList) {
-        const result = inputString.split(tag)[1];
-        if (result.length > 1) {
-            const closedTag = insertSlashAtSecondPosition(tag);
-            return [result.split(closedTag)[0], closedTag];
-        }
-    }
-    return [inputString, '']
-}
-
-function insertSlashAtSecondPosition(input: string): string {
-    return `${input.slice(0, 1)}/${input.slice(1)}`;
+export function extractToolContent(
+	content: string,
+	htmlTag: string,
+): { role: string; content: string }[] {
+	const firstResults = content.trim().split(`<tool-${htmlTag}>`, 2)
+	if (firstResults.length > 1) {
+		const secondResults = firstResults[1].trim().split(`</tool-${htmlTag}>`, 2)
+		return [
+			{ role: "agent", content: firstResults[0].trim() },
+			{ role: htmlTag, content: secondResults[0].trim() },
+			{ role: "agent", content: secondResults[1].trim() },
+		].filter((x) => x.content)
+	}
+	return [{ role: "agent", content: firstResults[0] }]
 }
