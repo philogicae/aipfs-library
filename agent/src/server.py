@@ -9,8 +9,9 @@ logger = getLogger("server")
 
 from agentkit import Agent
 from models import UserMessage
-from robyn import ALLOW_CORS, Request, Response, Robyn, status_codes
+from robyn import ALLOW_CORS, Request, Response, Robyn
 from robyn.openapi import Components, OpenAPI, OpenAPIInfo
+from robyn.status_codes import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
 
 agent = Agent()
 
@@ -52,13 +53,34 @@ async def log_response(response: Response):
 @app.options("/v1/chat")
 @app.post("/v1/chat")
 async def chat(request: Request, _: UserMessage):
-    if request.method == "OPTIONS":
+    try:
+        if request.method == "OPTIONS":
+            return Response(status_code=HTTP_200_OK, headers={}, description="OK")
+        return await agent.chat(request.json())
+    except Exception as e:
+        logger.error(f"Error in chat: {str(e)}")
         return Response(
-            status_code=status_codes.HTTP_200_OK, headers={}, description="OK"
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            headers={},
+            description=f"Error in chat: {str(e)}",
         )
-    data = request.json()
-    response = agent.chat(data)
-    return response
+
+
+@app.options("/v1/chat/stream")
+@app.post("/v1/chat/stream")
+async def chat_stream(request: Request, _: UserMessage):
+    try:
+        if request.method == "OPTIONS":
+            return Response(status_code=HTTP_200_OK, headers={}, description="OK")
+        # TODO
+        return await agent.chat_stream(request.json())
+    except Exception as e:
+        logger.error(f"Error in chat stream: {str(e)}")
+        return Response(
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            headers={},
+            description=f"Error in chat stream: {str(e)}",
+        )
 
 
 if __name__ == "__main__":

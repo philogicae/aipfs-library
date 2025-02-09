@@ -76,25 +76,36 @@ class Agent:
         )
         logger.info("Agent: ready")
 
-    def chat(self, user_message: UserMessage) -> AgentMessage:
-        new_message = dict(messages=[HumanMessage(content=user_message.get("message"))])
+    async def chat_stream(self, msg: UserMessage) -> AgentMessage:
+        new_message = dict(messages=[HumanMessage(content=msg.get("message"))])
         config = dict(
             configurable=dict(
-                user_id=user_message.get("user_id"),
-                thread_id=user_message.get("chat_id"),
+                user_id=msg.get("user_id"),
+                thread_id=msg.get("chat_id"),
             )
         )
-
-        chunks = []
+        ids = dict(user_id=msg.get("user_id"), chat_id=msg.get("chat_id"))
         for chunk in self.agent_executor.stream(new_message, config):
             if "agent" in chunk:
-                chunks.append(chunk["agent"]["messages"][0].content)
+                content = chunk["agent"]["messages"][0].content.strip()
+                print(f"AGENT:\n{content}")
+                yield AgentMessage(
+                    **ids,
+                    message=content,
+                )
             if "tools" in chunk:
-                chunks.append(chunk["tools"]["messages"][0].content)
+                hidden = chunk["tools"]["messages"][0].content.strip()
+                print(f"TOOLS (hidden):{hidden}")
+                yield AgentMessage(**ids, message="<hidden-tools>")
 
-        agent_message = AgentMessage(
-            user_id=user_message.get("user_id"),
-            chat_id=user_message.get("chat_id"),
+    async def chat(self, msg: UserMessage) -> AgentMessage:
+        chunks = []
+        async for message in self.chat_stream(msg):
+            text = message.get("message")
+            if text != "<hidden-tools>":
+                chunks.append(text)
+        ids = dict(user_id=msg.get("user_id"), chat_id=msg.get("chat_id"))
+        return AgentMessage(
+            **ids,
             message="\n".join(chunks),
         )
-        return agent_message
