@@ -3,19 +3,14 @@
 import Home from '@components/frames/Home'
 import Loading from '@components/frames/Loading'
 import NotFound from '@components/frames/NotFound'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { createHashRouter, redirect } from 'react-router'
+import { createHashRouter } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
 
 const hydrateFallbackElement = <Loading />
 
 export default function Router() {
-	const router = useRouter()
-	useEffect(() => {
-		if (window.location.pathname + window.location.hash === '/')
-			router.replace('/#/')
-	}, [router])
+	const [hashRouter, setHashRouter] = useState<any>()
 
 	if (typeof window !== 'undefined') {
 		const storedVersion = localStorage.getItem('appVersion')
@@ -25,7 +20,6 @@ export default function Router() {
 		}
 	}
 
-	const [hashRouter, setHashRouter] = useState<any>()
 	useEffect(() => {
 		console.log(`appVersion v${process.env.version}`)
 		setHashRouter(
@@ -35,10 +29,9 @@ export default function Router() {
 					element: <Home />,
 					hydrateFallbackElement,
 				},
-				{ path: '404', element: <NotFound />, hydrateFallbackElement },
 				{
 					path: '*',
-					loader: async () => redirect('404'),
+					element: <NotFound />,
 					hydrateFallbackElement,
 				},
 			])
