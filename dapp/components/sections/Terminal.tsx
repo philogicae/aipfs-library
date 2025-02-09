@@ -1,8 +1,9 @@
-import { useAppState } from '@components/context/AppState'
-import Message from '@components/elements/Message'
+import { type RefObject, useEffect, useMemo, useRef, useState } from 'react'
 import { TerminalFrame } from '@components/elements/TerminalFrame'
 import Background from '@components/layout/Background'
-import { type RefObject, useEffect, useRef, useState } from 'react'
+import { useAppState } from '@components/context/AppState'
+import useAgent from '@components/hooks/useAgent'
+import Message from '@components/elements/Message'
 
 const adjustHeight = (element: RefObject<HTMLTextAreaElement>) => {
 	const el = element.current
@@ -13,28 +14,31 @@ const adjustHeight = (element: RefObject<HTMLTextAreaElement>) => {
 }
 
 export default function Terminal() {
-  
-	const { setHasTyped } = useAppState()
-
-	const [value, setValue] = useState('')
-	const [history, setHistory] = useState<string[]>([
-		'How can I help you today?',
-	])
-	const textareaRef = useRef<HTMLTextAreaElement>(null)
+	const { hasTyped, setHasTyped, isLoading, profile, history, setHistory } =
+		useAppState();
 	const messagesContainerRef = useRef<HTMLDivElement>(null)
+	const textareaRef = useRef<HTMLTextAreaElement>(null)
+	const [value, setValue] = useState('')
+	const chat_id = useMemo(() => profile.chat_ids.at(-1) as string, [profile])
+	const callAgent = useAgent()
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-		setValue(e.target.value)
+		!isLoading && setValue(e.target.value)
 	}
 
 	const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-		setHasTyped(true)
+		!hasTyped && setHasTyped(true)
 		if (event.key === 'Enter') {
 			event.preventDefault()
-			const trimmedValue = value.trim()
-			if (trimmedValue) {
-				setHistory([...history, trimmedValue, 'How can I help you today?'])
-				setValue('')
+			const message = value.trim()
+			if (message) {
+				setValue("");
+				const new_history = {
+					...history,
+					[chat_id]: [...history[chat_id], { role: "you", content: message }],
+				}
+				setHistory(new_history)
+				callAgent(message, new_history);
 			}
 		}
 	}
@@ -49,16 +53,17 @@ export default function Terminal() {
 
 	return (
 		<TerminalFrame subTitle="terminal">
+			<Background />
 			<div
 				ref={messagesContainerRef}
-				className="flex flex-col w-full h-full items-start justify-start pl-3 py-2 text-sm overflow-y-auto scrollbar-hide z-40"
+				className="flex flex-col w-full h-full items-start justify-start p-3 sm:py-4 sm:px-6 gap-3 text-sm overflow-y-auto scrollbar-hide z-40"
 			>
-				{history.map((item, index) => (
-					<Message key={`msg-${index}`} text={item} isAgent={index % 2 === 0} />
+				{history[profile.chat_ids.at(-1) as string].map((msg, index) => (
+					<Message key={`msg-${index}`} msg={msg} />
 				))}
 			</div>
 			<div className="flex flex-row w-full items-start halo-text text-md sm:text-lg bg-gray-900 p-2 pt-1 z-50">
-				<span className="text-xl sm:text-2xl pr-2 pb-0.5">{'>'}</span>
+				<span className="text-xl sm:text-2xl pr-2 pb-0.5">{">"}</span>
 				<textarea
 					ref={textareaRef}
 					id="terminal-input"
@@ -73,7 +78,6 @@ export default function Terminal() {
 					rows={1}
 				/>
 			</div>
-			<Background />
 		</TerminalFrame>
-	)
+	);
 }

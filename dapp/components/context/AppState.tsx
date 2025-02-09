@@ -5,7 +5,7 @@ import { type SetStateAction, createContext, useContext, useState } from 'react'
 const defaults = {
 	hasTyped: false,
 	isLoading: false,
-	profile: { user_id: 'tester', chat_ids: [] } as {
+	profile: { user_id: 'tester', chat_ids: ['1'] } as {
 		user_id: string
 		chat_ids: string[]
 	},
