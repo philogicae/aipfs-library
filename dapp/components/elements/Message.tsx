@@ -1,9 +1,22 @@
 import { cn, type ClassName } from '@components/utils/tw';
+import type { TorrentResultsType } from '@components/elements/TorrentList';
+import TorrentList from './TorrentList';
 
 export default function Message({
 	msg,
   className,
 }: { msg: { role: string; content: any }, className?: ClassName }) {
+
+	try {
+		const torrentList = JSON.parse(msg.content) as TorrentResultsType
+		if (torrentList.torrentList.length !== 0) {
+			return <TorrentList torrents={torrentList} />
+		}
+		console.log(torrentList)
+	} catch (e) {
+		console.log(e)
+	}
+	
 	return (
 		<div
 			className={cn(
