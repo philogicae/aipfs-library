@@ -1,5 +1,7 @@
+import { useAppState } from '@components/context/AppState'
 import Message from '@components/elements/Message'
 import { TerminalFrame } from '@components/elements/TerminalFrame'
+import Background from '@components/layout/Background'
 import { type RefObject, useEffect, useRef, useState } from 'react'
 
 const adjustHeight = (element: RefObject<HTMLTextAreaElement>) => {
@@ -11,6 +13,9 @@ const adjustHeight = (element: RefObject<HTMLTextAreaElement>) => {
 }
 
 export default function Terminal() {
+  
+	const { setHasTyped } = useAppState()
+
 	const [value, setValue] = useState('')
 	const [history, setHistory] = useState<string[]>([
 		'How can I help you today?',
@@ -23,6 +28,7 @@ export default function Terminal() {
 	}
 
 	const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+		setHasTyped(true)
 		if (event.key === 'Enter') {
 			event.preventDefault()
 			const trimmedValue = value.trim()
@@ -45,13 +51,13 @@ export default function Terminal() {
 		<TerminalFrame subTitle="terminal">
 			<div
 				ref={messagesContainerRef}
-				className="flex flex-col w-full h-full items-start justify-start pl-3 py-2 text-sm overflow-y-auto scrollbar-hide"
+				className="flex flex-col w-full h-full items-start justify-start pl-3 py-2 text-sm overflow-y-auto scrollbar-hide z-40"
 			>
 				{history.map((item, index) => (
 					<Message key={`msg-${index}`} text={item} isAgent={index % 2 === 0} />
 				))}
 			</div>
-			<div className="flex flex-row w-full items-start halo-text text-md sm:text-lg bg-gray-900 p-2 pt-1">
+			<div className="flex flex-row w-full items-start halo-text text-md sm:text-lg bg-gray-900 p-2 pt-1 z-50">
 				<span className="text-xl sm:text-2xl pr-2 pb-0.5">{'>'}</span>
 				<textarea
 					ref={textareaRef}
@@ -67,6 +73,7 @@ export default function Terminal() {
 					rows={1}
 				/>
 			</div>
+			<Background />
 		</TerminalFrame>
 	)
 }

@@ -8,7 +8,7 @@ export default function Background() {
 	return (
 		<div
 			className={cn(
-				'absolute flex w-full h-full justify-center items-center transition-opacity ease-in-out duration-1000 pb-8 z-0',
+				'absolute flex w-full h-full justify-center items-center transition-opacity duration-1000 pb-8 z-0',
 				hasTyped ? 'opacity-15' : 'opacity-70'
 			)}
 		>
