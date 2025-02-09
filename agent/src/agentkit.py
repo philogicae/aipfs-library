@@ -1,8 +1,10 @@
 from logging import getLogger
 from os import getenv, makedirs, path
 
+import coloredlogs
 from cdp_langchain.agent_toolkits import CdpToolkit
 from cdp_langchain.utils import CdpAgentkitWrapper
+from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
@@ -10,7 +12,10 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 from models import AgentMessage, UserMessage
 from prompts import SYSTEM_PROMPT
+from tools import search_torrents_tool
 
+load_dotenv()
+coloredlogs.install()
 logger = getLogger("agent")
 
 
@@ -45,16 +50,28 @@ def create_agentkit_wallet() -> CdpAgentkitWrapper:
 
 
 def create_llm() -> ChatOpenAI:
-    llm = ChatOpenAI(model=getenv("OPENAI_API_MODEL"))
+    llm = ChatOpenAI(
+        base_url=getenv("OPENAI_API_BASE"),
+        api_key=getenv("OPENAI_API_KEY"),
+        model=getenv("OPENAI_API_MODEL"),
+    )
     logger.info("LLM: ready")
     return llm
 
 
 def create_tools(agentkit: CdpAgentkitWrapper) -> list[BaseTool]:
     cdp_toolkit = CdpToolkit.from_cdp_agentkit_wrapper(agentkit)
-    logger.info("Tools: ready")
     allowed_tools = ["get_wallet_details", "get_balance"]
-    return [tool for tool in cdp_toolkit.get_tools() if tool.name in allowed_tools]
+
+    # Filter CDP Tools
+    tools = [tool for tool in cdp_toolkit.get_tools() if tool.name in allowed_tools]
+    logger.info("CDP Tools: ready")
+
+    # Add Custom Tools
+    tools.append(search_torrents_tool(agentkit))
+    logger.info("Custom Tools: ready")
+
+    return tools
 
 
 def create_memory():
@@ -94,9 +111,13 @@ class Agent:
                     message=content,
                 )
             if "tools" in chunk:
-                hidden = chunk["tools"]["messages"][0].content.strip()
-                print(f"TOOLS (hidden):{hidden}")
-                yield AgentMessage(**ids, message="<hidden-tools>")
+                result = chunk["tools"]["messages"][0].content.strip()
+                message = content if result.startswith("<tool-") else "<hidden-tools>"
+                if message == "<hidden-tools>":
+                    print(f"TOOLS (hidden):\n{result}")
+                else:
+                    print(f"TOOLS (sent):\n{result}")
+                yield AgentMessage(**ids, message=message)
 
     async def chat(self, msg: UserMessage) -> AgentMessage:
         chunks = []
@@ -109,3 +130,18 @@ class Agent:
             **ids,
             message="\n".join(chunks).strip().replace("\n\n", "\n"),
         )
+
+
+async def chat_test(message: str):
+    agent = Agent()
+    await agent.chat(dict(user_id="1", chat_id="1", message=message))
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    load_dotenv()
+    coloredlogs.install()
+    from rich import print
+
+    asyncio.run(chat_test("Search torrents for: gladiator"))

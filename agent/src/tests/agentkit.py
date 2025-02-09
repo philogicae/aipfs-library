@@ -1,5 +1,7 @@
+from logging import getLogger
 from os import getenv, makedirs, path
 
+import coloredlogs
 from cdp_langchain.agent_toolkits import CdpToolkit
 from cdp_langchain.utils import CdpAgentkitWrapper
 from dotenv import load_dotenv
@@ -10,6 +12,8 @@ from langgraph.prebuilt import create_react_agent
 from rich import print
 
 load_dotenv()
+coloredlogs.install()
+logger = getLogger("agent")
 
 data_dir = path.join(path.dirname(path.dirname(path.dirname(__file__))), "data")
 makedirs(data_dir, exist_ok=True)

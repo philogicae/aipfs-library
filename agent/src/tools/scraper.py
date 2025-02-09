@@ -1,6 +1,5 @@
 import asyncio
 import re
-import sys
 import time
 from json import loads
 from logging import getLogger
@@ -9,14 +8,13 @@ from typing import List, Optional
 from urllib.parse import quote
 
 import coloredlogs
+from cdp_langchain.tools import CdpTool
+from cdp_langchain.utils import CdpAgentkitWrapper
 from crawl4ai import AsyncWebCrawler
 from crawl4ai.async_configs import BrowserConfig, CrawlerRunConfig
 from dotenv import load_dotenv
 from openai import OpenAI
-from pydantic import BaseModel
-from rich import print
-from rich.console import Console
-from rich.table import Table
+from pydantic import BaseModel, Field
 
 load_dotenv()
 coloredlogs.install()
@@ -43,10 +41,6 @@ MODELS = dict(
 )
 
 PARAMS = dict(temperature=0.7, stream=False)
-
-
-def get_query():
-    return " ".join(sys.argv[1:])
 
 
 def to_safe_url(text: str):
@@ -106,7 +100,7 @@ def extract(text: str, llm: Optional[str] = None):
         messages=[
             {
                 "role": "system",
-                "content": f"Extract all torrent objects from the provided scraped content. Never truncate any magnet link. If these is no match, the torrent list must be empty. Always and only respond following the given output JSON schema and using proper double quotes:\n{Results.model_json_schema()}",
+                "content": f"Extract all torrent objects from the provided markdown content. NEVER truncate any magnet link. If no match, torrent list must be empty. ALWAYS ONLY respond following STRICTLY the given output JSON schema (and using proper double quote standard):\n{Results.model_json_schema()}",
             },
             {
                 "role": "user",
@@ -133,7 +127,6 @@ async def find_torrent_list(
             logger.info(f"Completed in {time.time() - start_time:.2f} sec.")
             return extracted
         except Exception as e:
-            print(extracted)
             logger.error(e)
             retries += 1
             if retries >= max_retries:
@@ -142,47 +135,44 @@ async def find_torrent_list(
     return []
 
 
-def display_torrents(results):
-    console = Console()
-    table = Table(title="Torrents")
-    table.add_column("#", style="cyan", no_wrap=True)
-    table.add_column("Filename", style="magenta")
-    table.add_column("Size", justify="right", style="green")
-    table.add_column("SE", justify="right", style="green")
-    table.add_column("LE", justify="right", style="green")
-    table.add_column("Date", style="bright_cyan")
-    table.add_column("Uploader", style="blue")
+# TOOL DEFINITION
 
-    for i, result in enumerate(results):
-        table.add_row(
-            str(i + 1),
-            result["filename"],
-            result["size"],
-            str(result["seeders"]),
-            str(result["leechers"]),
-            result["date"],
-            result["uploader"],
-        )
-    console.print(table)
+SEARCH_TORRENTS_PROMPT = """
+This tool will search for torrents using the provided query and return a list of found torrents. Results should never be displayed by the agent afterwards, since this tool output is always visible by the user. The agent can reply to signal the search success or failure.
+"""
 
 
-async def search(text: str, source: Optional[str] = None, llm: Optional[str] = None):
-    torrents = await find_torrent_list(query=text, source=source, llm=llm)
+def search_torrents(query: str) -> str:
+    """Search for torrents using the provided query.
+
+    Args:
+        query (str): The query to search torrents for.
+
+    Returns:
+        str: The list of found torrents.
+
+    """
+
+    torrents = asyncio.run(find_torrent_list(query))
     if not torrents:
         logger.error("No result found.")
-    else:
-        display_torrents(torrents)
-        while True:
-            text = input("Index ('x' to quit): ")
-            try:
-                index = int(text) - 1
-                print(torrents[index])
-            except Exception:
-                return
+    return f'<tool-search-torrents>{{"torrents": {torrents}}}</tool-search-torrents>'
 
 
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        logger.error("Usage: python src/tests/scraper.py <search>")
-        exit(1)
-    asyncio.run(search(get_query()))
+class SearchTorrentsInput(BaseModel):
+    """Input argument schema for search torrents action."""
+
+    query: str = Field(
+        ...,
+        description="The query to search torrents for. e.g. `lord of the rings ebook`. Keywords used by users in their queries should be preserved.",
+    )
+
+
+def search_torrents_tool(agentkit: CdpAgentkitWrapper):
+    return CdpTool(
+        cdp_agentkit_wrapper=agentkit,
+        name="search_torrents",
+        description=SEARCH_TORRENTS_PROMPT,
+        func=search_torrents,
+        args_schema=SearchTorrentsInput,
+    )

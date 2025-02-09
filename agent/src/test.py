@@ -14,7 +14,7 @@ from robyn import ALLOW_CORS, Request, Response, Robyn, status_codes
 from robyn.openapi import Components, OpenAPI, OpenAPIInfo
 from robyn.types import Body, JSONResponse
 from tests.ipfs import add_to_ipfs
-from tests.scraper import find_torrents
+from tests.scraper import find_torrent_list
 from tests.torrent import download_torrent
 
 
@@ -67,15 +67,15 @@ async def log_response(response: Response):
     return response
 
 
-@app.options("/v1/chat/completions")
-@app.post("/v1/chat/completions")
-async def completion(request: Request, _: CompletionRequest):
+@app.options("/v1/scrape")
+@app.post("/v1/scrape")
+async def scrape(request: Request, _: CompletionRequest):
     if request.method == "OPTIONS":
         return Response(
             status_code=status_codes.HTTP_200_OK, headers={}, description="OK"
         )
     prompt = request.json().get("prompt")
-    torrents = await find_torrents(prompt)
+    torrents = await find_torrent_list(prompt)
     return JSONResponse(result=torrents)
 
 
