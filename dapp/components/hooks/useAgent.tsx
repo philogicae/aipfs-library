@@ -42,14 +42,15 @@ export default function useAgent() {
 				chat_id,
 				message,
 			})
-			if (!response) navigate('down')
-			setHistory({
-				...history,
-				[chat_id]: [
-					...history[chat_id],
-					{ role: 'agent', content: response.message },
-				],
-			});
+			if (response) {
+        setHistory({
+          ...history,
+          [chat_id]: [
+            ...history[chat_id],
+            { role: 'agent', content: response.message },
+          ],
+        })
+			}
 			setIsLoading(false)
 		},
 		[navigate, profile],
