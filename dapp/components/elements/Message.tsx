@@ -3,7 +3,7 @@ import { cn, type ClassName } from '@components/utils/tw';
 export default function Message({
 	msg,
   className,
-}: { msg: { role: string; content: string }, className?: ClassName }) {
+}: { msg: { role: string; content: any }, className?: ClassName }) {
 	return (
 		<div
 			className={cn(

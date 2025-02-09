@@ -61,6 +61,20 @@ export default function Terminal() {
 				{history[profile.chat_ids.at(-1) as string].map((msg, index) => (
 					<Message key={`msg-${index}`} msg={msg} />
 				))}
+				{isLoading && (
+					<div>
+						<Message
+							msg={{
+								role: "agent",
+								content: (
+									<div className="animate-pulse">
+										{"*thinking...*"}
+									</div>
+								),
+							}}
+						/>
+					</div>
+				)}
 			</div>
 			<div className="flex flex-row w-full items-start halo-text text-md sm:text-lg bg-gray-900 p-2 pt-1 z-50">
 				<span className="text-xl sm:text-2xl pr-2 pb-0.5">{">"}</span>
