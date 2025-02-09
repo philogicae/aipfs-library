@@ -107,5 +107,5 @@ class Agent:
         ids = dict(user_id=msg.get("user_id"), chat_id=msg.get("chat_id"))
         return AgentMessage(
             **ids,
-            message="\n".join(chunks),
+            message="\n".join(chunks).strip().replace("\n\n", "\n"),
         )
