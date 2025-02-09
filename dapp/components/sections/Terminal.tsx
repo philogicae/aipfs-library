@@ -1,6 +1,6 @@
 import Message from "@components/elements/Message"
 import { useState, useRef, useEffect } from "react"
-import { FaRegWindowRestore, FaXmark, FaRegWindowMinimize } from "react-icons/fa6"
+import {TerminalFrame} from '@components/elements/TerminalFrame'
 
 export default function Terminal() {
   const [value, setValue] = useState("")
@@ -39,15 +39,7 @@ export default function Terminal() {
   }, [history, value])
 
   return (
-    <div className="flex flex-col sm:text-3xl font-mono w-full h-full justify-between border border-green-300 rounded-md shadow-sm shadow-green-200">
-      <div className="flex w-full h-5 justify-between text-sm text-[#baffdb] border-green-300 border-b pl-1 pr-0.5">
-        <span className="font-semibold">aipfs-library</span>
-        <div className="flex flex-row gap-1 items-center justify-center">
-          <FaRegWindowMinimize />
-          <FaRegWindowRestore className="ml-1" />
-          <FaXmark className="text-lg" />
-        </div>
-      </div>
+    <TerminalFrame subTitle="Home">
       <div 
         ref={messagesContainerRef}
         className="flex flex-col w-full h-full items-start justify-start pl-3 py-2 text-sm overflow-y-auto scrollbar-hide"
@@ -76,6 +68,6 @@ export default function Terminal() {
           rows={1}
         />
       </div>
-    </div>
+    </TerminalFrame>
   )
 }
