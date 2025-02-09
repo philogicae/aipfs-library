@@ -20,7 +20,7 @@ export default function NotFound() {
 						the page does not exist
 					</div>
 					<Button className="mt-3 font-extrabold text-black text-sm" onPress={() => router.push("/")} radius="sm" color="success" size="sm">
-						go to home
+						go to terminal
 					</Button>
 				</div>
 			</TerminalFrame>
