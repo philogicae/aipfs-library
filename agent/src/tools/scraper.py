@@ -1,7 +1,7 @@
 import asyncio
 import re
 import time
-from json import loads
+from json import dumps, loads
 from logging import getLogger
 from os import getenv
 from typing import List, Optional
@@ -100,7 +100,7 @@ def extract(text: str, llm: Optional[str] = None):
         messages=[
             {
                 "role": "system",
-                "content": f"Extract all torrent objects from the provided markdown content. NEVER truncate any magnet link. If no match, torrent list must be empty. ALWAYS ONLY respond following STRICTLY the given output JSON schema (and using proper double quote standard):\n{Results.model_json_schema()}",
+                "content": f"Extract all torrent objects from the provided markdown content. NEVER truncate any magnet link. If no match, torrent list must be empty. ALWAYS ONLY respond following STRICTLY the given output JSON schema and by enforcing the double quote standard to make it valid and parseable:\n{dumps(Results.model_json_schema())}",
             },
             {
                 "role": "user",
@@ -114,7 +114,7 @@ def extract(text: str, llm: Optional[str] = None):
 
 
 async def find_torrent_list(
-    query: str, source: Optional[str] = None, llm: Optional[str] = None, max_retries=3
+    query: str, source: Optional[str] = None, llm: Optional[str] = None, max_retries=1
 ):
     start_time = time.time()
     results = await scrape(query, source=source)
@@ -156,7 +156,7 @@ def search_torrents(query: str) -> str:
     torrents = asyncio.run(find_torrent_list(query))
     if not torrents:
         logger.error("No result found.")
-    return f'<tool-search-torrents>{{"torrents": {torrents}}}</tool-search-torrents>'
+    return f'<tool-search-torrents>{{"torrents": {dumps(torrents)}}}</tool-search-torrents>'
 
 
 class SearchTorrentsInput(BaseModel):

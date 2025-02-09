@@ -111,19 +111,19 @@ class Agent:
                     message=content,
                 )
             if "tools" in chunk:
-                result = chunk["tools"]["messages"][0].content.strip()
-                message = content if result.startswith("<tool-") else "<hidden-tools>"
-                if message == "<hidden-tools>":
-                    print(f"TOOLS (hidden):\n{result}")
+                content = chunk["tools"]["messages"][0].content.strip()
+                message = content if content.startswith("<tool-") else "<hidden-tool>"
+                if message == "<hidden-tool>":
+                    print(f"TOOLS (hidden):\n{content}")
                 else:
-                    print(f"TOOLS (sent):\n{result}")
+                    print(f"TOOLS (sent):\n{content}")
                 yield AgentMessage(**ids, message=message)
 
     async def chat(self, msg: UserMessage) -> AgentMessage:
         chunks = []
         async for message in self.chat_stream(msg):
             text = message.get("message")
-            if text != "<hidden-tools>":
+            if text != "<hidden-tool>":
                 chunks.append(text)
         ids = dict(user_id=msg.get("user_id"), chat_id=msg.get("chat_id"))
         return AgentMessage(
