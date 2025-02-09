@@ -3,6 +3,7 @@
 import Home from '@components/frames/Home'
 import Loading from '@components/frames/Loading'
 import NotFound from '@components/frames/NotFound'
+import Unavailable from '@components/frames/Unavailable'
 import { useEffect, useState } from 'react'
 import { createHashRouter } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
@@ -27,6 +28,11 @@ export default function Router() {
 				{
 					path: '',
 					element: <Home />,
+					hydrateFallbackElement,
+				},
+				{
+					path: 'down',
+					element: <Unavailable />,
 					hydrateFallbackElement,
 				},
 				{
