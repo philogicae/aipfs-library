@@ -1,6 +1,7 @@
 import Message from "@components/elements/Message"
 import { useState, useRef, useEffect } from "react"
 import {TerminalFrame} from '@components/elements/TerminalFrame'
+import Background from '@components/frames/Background'
 
 export default function Terminal() {
   const [value, setValue] = useState("")
@@ -40,6 +41,7 @@ export default function Terminal() {
 
   return (
     <TerminalFrame subTitle="terminal">
+      <Background />
       <div 
         ref={messagesContainerRef}
         className="flex flex-col w-full h-full items-start justify-start pl-3 py-2 text-sm overflow-y-auto scrollbar-hide"
