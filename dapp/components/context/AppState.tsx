@@ -2,19 +2,45 @@
 
 import { type SetStateAction, createContext, useContext, useState } from 'react'
 
-const AppContext = createContext({
+const defaults = {
 	hasTyped: false,
+	isLoading: false,
+	profile: { user_id: 'tester', chat_ids: [] } as {
+		user_id: string
+		chat_ids: string[]
+	},
+	history: {
+		'1': [{ role: 'agent', content: '<Say hi to me!>' }],
+	} as Record<string, { role: string, content: string }[]>,
 	setHasTyped: (_value: SetStateAction<boolean>) => {},
-})
+	setIsLoading: (_value: SetStateAction<boolean>) => {},
+	setProfile: (
+		_value: SetStateAction<{ user_id: string; chat_ids: string[] }>,
+	) => {},
+	setHistory: (
+		_value: SetStateAction<Record<string, { role: string, content: string }[]>>,
+	) => {},
+};
+
+const AppContext = createContext(defaults);
 
 export default function AppState({ children }: { children: React.ReactNode }) {
-	const [hasTyped, setHasTyped] = useState(false)
+	const [hasTyped, setHasTyped] = useState(defaults.hasTyped)
+	const [isLoading, setIsLoading] = useState(defaults.isLoading)
+	const [profile, setProfile] = useState(defaults.profile)
+	const [history, setHistory] = useState(defaults.history)
 	return (
 		<div className="flex w-full h-full">
 			<AppContext.Provider
 				value={{
 					hasTyped,
 					setHasTyped,
+					isLoading,
+					setIsLoading,
+					profile,
+					setProfile,
+					history,
+					setHistory,
 				}}
 			>
 				{children}
