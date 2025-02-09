@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import '@app/globals.css'
+import AppState from '@components/context/AppState'
 import { HeroUI } from '@components/layout/HeroUI'
 
 const SITE_NAME = 'aipfs-library'
@@ -73,7 +74,9 @@ export default function RootLayout({
 	return (
 		<html lang="en" className="dark">
 			<body>
-				<HeroUI>{children}</HeroUI>
+				<HeroUI>
+					<AppState>{children}</AppState>
+				</HeroUI>
 			</body>
 		</html>
 	)

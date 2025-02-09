@@ -1,13 +1,13 @@
-"use client";
+'use client'
 
-import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
-import { Button } from "@heroui/react";
-import PageWrapper from "@components/layout/PageWrapper";
-import TerminalFrame from "@components/elements/TerminalFrame";
-import { useRouter } from "next/navigation";
+import TerminalFrame from '@components/elements/TerminalFrame'
+import PageWrapper from '@components/layout/PageWrapper'
+import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
+import { Button } from '@heroui/react'
+import { useRouter } from 'next/navigation'
 
 export default function NotFound() {
-	const router = useRouter();
+	const router = useRouter()
 	return (
 		<PageWrapper>
 			<TerminalFrame subTitle="lost signal">
@@ -19,7 +19,13 @@ export default function NotFound() {
 					<div className="text-lg text-gray-500 leading-relaxed">
 						the page does not exist
 					</div>
-					<Button className="mt-3 font-extrabold text-black text-sm" onPress={() => router.push("/")} radius="sm" color="success" size="sm">
+					<Button
+						className="mt-3 font-extrabold text-black text-sm"
+						onPress={() => router.push('/')}
+						radius="sm"
+						color="success"
+						size="sm"
+					>
 						go to terminal
 					</Button>
 				</div>
