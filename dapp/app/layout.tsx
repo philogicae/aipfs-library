@@ -13,6 +13,11 @@ export const metadata: Metadata = {
 	metadataBase: new URL(SITE_URL),
 	description: SITE_DESCRIPTION,
 	manifest: '/manifest.json',
+	icons: {
+		icon: '/favicon.ico',
+		shortcut: '/favicon.ico',
+		apple: '/apple-touch-icon.png',
+	},
 	appLinks: {
 		web: {
 			url: SITE_URL,
@@ -24,13 +29,34 @@ export const metadata: Metadata = {
 		capable: true,
 		statusBarStyle: 'black-translucent',
 	},
+	openGraph: {
+		type: 'website',
+		title: SITE_NAME,
+		siteName: SITE_NAME,
+		description: SITE_DESCRIPTION,
+		url: SITE_URL,
+		images: [
+			{
+				url: '/logo.png',
+				width: 1500,
+				height: 1500,
+			},
+		],
+	},
+	twitter: {
+		card: 'summary_large_image',
+		title: SITE_NAME,
+		site: SITE_URL,
+		description: SITE_DESCRIPTION,
+		images: [
+			{
+				url: '/logo.png',
+				width: 1500,
+				height: 1500,
+			},
+		],
+	},
 }
-
-/* icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
-  }, */
 
 export const viewport: Viewport = {
 	themeColor: 'black',

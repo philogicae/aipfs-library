@@ -2,7 +2,7 @@
   "name": "aipfs-library",
   "description": "Decentralized media library managed by AI agents indexing torrents and curated by the community",
   "repository": "https://github.com/philogicae/aipfs-library",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": false,
   "author": "@philogicae, @adrienvfd",
   "license": "MIT",

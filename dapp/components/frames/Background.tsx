@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import logo from '../../public/logo.png'
 import { cn } from '@components/utils/tw'
+import { Image } from "@heroui/react"
 
 export default function Background() {
     const [isTyping, setIsTyping] = useState(false)
@@ -14,8 +14,13 @@ export default function Background() {
     }, [])
 
     return (
-        <div className={cn('absolute flex w-full h-full justify-center items-center transition-opacity ease-in-out duration-1000', isTyping ? 'opacity-10' : 'opacity-65')}>
-            <div className="h-full w-full justify-center items-center bg-center bg-contain bg-no-repeat" style={{ backgroundImage: `url(${logo.src})` }} />
+        <div className={cn('absolute flex w-full h-full justify-center items-center transition-opacity ease-in-out duration-1000 pb-8 z-0', isTyping ? 'opacity-15' : 'opacity-70')}>
+            <Image
+                src='logo.png'
+                alt="logo"
+                radius="sm"
+                width={400}
+            />
         </div>
     )
 }
