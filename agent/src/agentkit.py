@@ -56,6 +56,7 @@ def create_llm() -> ChatOpenAI:
         base_url=getenv("OPENAI_API_BASE"),
         api_key=getenv("OPENAI_API_KEY"),
         model=getenv("OPENAI_API_MODEL"),
+        temperature=0.4,
     )
     logger.info("LLM: ready")
     return llm

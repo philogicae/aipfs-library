@@ -30,6 +30,15 @@ FILTERS = {
     "empty_curly_brackets": r" *\{ *\} *",
     "empty_parenthesis": r" *\( *\) *",
     "empty_brackets": r" *\[ *\] *",
+    "tags": r"(>?<(img|a) ((alt|src)=)+)|(<a href=)",
+    "date": r'<label title=("[a-zA-Z0-9()+: ]+"|>)',
+}
+
+REPLACERS = {
+    "spans": [r"</?span>", " | "],
+    "weird spaced bars": [r" *\|[ \|]+", " | "],
+    "double_quotes": [r'"[" ]+', ""],
+    "single_angle_bracket": [r"<|>", ""],
 }
 
 WEBSITES = {
@@ -84,6 +93,10 @@ def shrink_text(
         if exclude_patterns and name in exclude_patterns:
             continue
         text = re.sub(pattern, "", text)
+    for name, replacer in REPLACERS.items():
+        if exclude_patterns and name in exclude_patterns:
+            continue
+        text = re.sub(replacer[0], replacer[1], text)
     truncated = text[:max_chars]
     return re.sub(r"\n+", "\n", "\n".join(truncated.split("\n")[:-1])).strip()
 
@@ -128,7 +141,9 @@ async def scrape_torrents(query: str, sources: Optional[List[str]] = None) -> st
                     ),
                     data["exclude_patterns"],
                 )
-                results += f"\nFOR WEBSITE SOURCE -> {source}:\n{result}\n----------"
+                results += (
+                    f"\nSCRAPING WEBSITE SOURCE -> {source}:\n{result}\n----------"
+                )
     return results
 
 
@@ -145,7 +160,7 @@ def extract_results(text: str, llm: Optional[str] = None) -> str:
         messages=[
             {
                 "role": "system",
-                "content": f"Extract ALL torrent objects from the provided data without filtering. NEVER truncate magnet links. If no match, torrent list must be empty. ALWAYS ONLY respond following STRICTLY the given output JSON schema:\n{dumps(Results.model_json_schema()).replace(' ', '').replace('\n', '')}",
+                "content": f"Always extract every single torrent objects found in the provided scraped data. NEVER truncate magnet links. If no match, torrent list must be empty. ALWAYS ONLY respond following STRICTLY the given output JSON schema:\n{dumps(Results.model_json_schema()).replace(' ', '').replace('\n', '')}",
             },
             {
                 "role": "user",
