@@ -77,7 +77,7 @@ class Results(BaseModel):
 
 
 def shrink_text(
-    text: str, exclude_patterns: Optional[List[str]] = None, max_chars=6000
+    text: str, exclude_patterns: Optional[List[str]] = None, max_chars=5000
 ) -> str:
     text = text.split("<li>", 1)[-1].replace("<li>", "")
     for name, pattern in FILTERS.items():
