@@ -24,7 +24,7 @@ logger = getLogger("scraper")
 FILTERS = {
     "full_links": r"(http|https|ftp):[/]{1,2}[a-zA-Z0-9.]+[a-zA-Z0-9./?=+~_\-@:%#&]*",
     "backslashes": r"\\",
-    "local_links": r"<\/[a-zA-Z0-9./?=+~()_\-@:%#&]*> *",
+    "local_links": r"(a href=)*(<|\")\/[a-zA-Z0-9./?=+~()_\-@:%#&]*(>|\")* *",
     "some_texts": r' *"[a-zA-Z ]+" *',
     "empty_angle_brackets": r" *< *> *",
     "empty_curly_brackets": r" *\{ *\} *",
@@ -34,10 +34,13 @@ FILTERS = {
 
 WEBSITES = {
     "thepiratebay.org": dict(
-        search="https://www2.thepiratebay3.to/s/?q={query}", exclude_patterns=[]
+        search="https://thepiratebay.org/search.php?q={query}",
+        parsing="html",
+        exclude_patterns=[],
     ),
     "nyaa.si": dict(
         search="https://nyaa.si/?f=0&c=0_0&q={query}&s=seeders&o=desc",
+        parsing="markdown",
         exclude_patterns=["local_links"],
     ),
 }
@@ -55,7 +58,7 @@ MODELS = dict(
     ),
 )
 
-PARAMS = dict(temperature=0.2, stream=False)
+PARAMS = dict(temperature=0.1, stream=False)
 
 
 class Torrent(BaseModel):
@@ -76,12 +79,13 @@ class Results(BaseModel):
 def shrink_text(
     text: str, exclude_patterns: Optional[List[str]] = None, max_chars=10000
 ) -> str:
+    text = text.split("<li>", 1)[-1].replace("<li>", "")
     for name, pattern in FILTERS.items():
         if exclude_patterns and name in exclude_patterns:
             continue
         text = re.sub(pattern, "", text)
     truncated = text[:max_chars]
-    return "\n".join(truncated.split("\n")[:-1])
+    return re.sub(r"\n+", "\n", "\n".join(truncated.split("\n")[:-1])).strip()
 
 
 async def scrape_torrents(query: str, sources: Optional[List[str]] = None) -> str:
@@ -116,7 +120,14 @@ async def scrape_torrents(query: str, sources: Optional[List[str]] = None) -> st
             if sources is None or source in sources:
                 url = data["search"].format(query=quote(query))
                 result = await crawler.arun(url=url, config=run_config)
-                result = shrink_text(result.markdown, data["exclude_patterns"])
+                result = shrink_text(
+                    (
+                        result.cleaned_html
+                        if data["parsing"] == "html"
+                        else result.markdown
+                    ),
+                    data["exclude_patterns"],
+                )
                 results += f"\nFOR WEBSITE SOURCE -> {source}:\n{result}\n----------"
     return results
 
@@ -151,24 +162,25 @@ def extract_json(text: str) -> List[dict]:
     return loads("[" + "]".join(text.split("[", 1)[1].split("]")[:-1]) + "]")
 
 
-def filtering_results(torrents: dict, min_peers=0) -> List[dict]:
+def filtering_results(torrents: dict, min_peers=0, max_items=10) -> List[dict]:
     return list(
         sorted(
             filter(
-                lambda torrent: torrent["seeders"] + torrent["leechers"] >= min_peers,
+                lambda torrent: int(torrent["seeders"]) + int(torrent["leechers"])
+                >= min_peers,
                 torrents,
             ),
-            key=lambda torrent: torrent["seeders"] + torrent["leechers"],
+            key=lambda torrent: int(torrent["seeders"]) + int(torrent["leechers"]),
             reverse=True,
         )
-    )
+    )[:max_items]
 
 
 async def find_torrent_list(
     query: str,
     sources: Optional[List[str]] = None,
     llm: Optional[str] = None,
-    max_retries=2,
+    max_retries=3,
 ) -> List[dict]:
     start_time = time.time()
     results = await scrape_torrents(query, sources=sources)
