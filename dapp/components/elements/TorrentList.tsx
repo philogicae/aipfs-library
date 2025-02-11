@@ -45,14 +45,14 @@ export default function TorrentList({
 
 	return dataSource ? (
 		<Table
-			aria-label="torrent-list"
+			aria-label='torrent-list'
 			isCompact
 			removeWrapper
-			selectionMode="single"
+			selectionMode='single'
 			topContent={
 				<Message msg={{ role: 'tool', content: 'search-torrents' }} />
 			}
-			topContentPlacement="inside"
+			topContentPlacement='inside'
 		>
 			<TableHeader>
 				{columns.map((column) => (
@@ -60,9 +60,12 @@ export default function TorrentList({
 				))}
 			</TableHeader>
 			<TableBody>
-				{dataSource.map((torrent) => (
-					<TableRow key={torrent.filename}>
-						<TableCell>{torrent.filename}</TableCell>
+				{dataSource.map((torrent, index) => (
+					<TableRow key={`${torrent.filename}-${index}`}>
+						<TableCell>
+							{torrent.filename.slice(0, 64) +
+								(torrent.filename.length > 64 ? '...' : '')}
+						</TableCell>
 						<TableCell>{torrent.date}</TableCell>
 						<TableCell>{torrent.size}</TableCell>
 						<TableCell>{torrent.seeders}</TableCell>
@@ -72,6 +75,6 @@ export default function TorrentList({
 			</TableBody>
 		</Table>
 	) : (
-		<></>
+		<Message msg={{ role: 'tool', content: 'search-torrents -> no result' }} />
 	);
 }

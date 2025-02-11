@@ -14,7 +14,7 @@ export default function Message({
 		if (typeof torrent_data !== 'boolean' && torrent_data?.torrents?.length > 0) {
 			return <TorrentList torrent_data={torrent_data as TorrentResultsType} />
 		}
-	} catch (e) {}
+	} catch (e) {return <Message msg={{ role: "info", content: "Error parsing result" }} />}
 	return (
 		<div
 			className={cn(
@@ -25,12 +25,18 @@ export default function Message({
 			<span
 				className={cn(
 					"font-semibold mr-1.5",
-					msg.role === "agent" ? "text-cyan-200" : msg.role === "you" ? "text-orange-200" : "text-violet-300",
+					msg.role === "agent"
+						? "text-cyan-200"
+						: msg.role === "you"
+							? "text-orange-200"
+							: msg.role === "info"
+								? "text-gray-300"
+								: "text-violet-300",
 				)}
 			>
 				{`${msg.role}:`}
 			</span>
-			<span className="halo-text">{msg.content}</span>
+			<span className="halo-text break-normal">{msg.content}</span>
 		</div>
-	)
+	);
 }

@@ -17,7 +17,7 @@ export default function Unavailable() {
             AGENT UNAVAILABLE
           </div>
           <div className="text-lg text-gray-500 leading-relaxed">
-            an error occurred while calling the agent
+            maybe the agent is not feeling well
           </div>
           <Button
             className="mt-3 font-extrabold text-black text-sm"
