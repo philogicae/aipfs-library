@@ -9,6 +9,6 @@ docker_cmd() {
     fi
 }
 
-docker_cmd compose -f docker/compose.yaml down
-docker_cmd compose -f docker/compose.yaml up --build -d
-docker_cmd image prune -af
+docker_cmd compose -f docker/compose.yaml down -v
+./scripts/3_deploy-agent.sh
+./scripts/4_logs-agent.sh
