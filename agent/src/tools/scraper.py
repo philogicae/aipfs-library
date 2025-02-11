@@ -10,8 +10,9 @@ from urllib.parse import quote
 import coloredlogs
 from cdp_langchain.tools import CdpTool
 from cdp_langchain.utils import CdpAgentkitWrapper
-from crawl4ai import AsyncWebCrawler
+from crawl4ai import AsyncWebCrawler, CacheMode
 from crawl4ai.async_configs import BrowserConfig, CrawlerRunConfig
+from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
 from dotenv import load_dotenv
 from openai import OpenAI
 from pydantic import BaseModel, Field
@@ -20,11 +21,25 @@ load_dotenv()
 coloredlogs.install()
 logger = getLogger("scraper")
 
+FILTERS = {
+    "full_links": r"(http|https|ftp):[/]{1,2}[a-zA-Z0-9.]+[a-zA-Z0-9./?=+~_\-@:%#&]*",
+    "backslashes": r"\\",
+    "local_links": r"<\/[a-zA-Z0-9./?=+~()_\-@:%#&]*> *",
+    "some_texts": r' *"[a-zA-Z ]+" *',
+    "empty_angle_brackets": r" *< *> *",
+    "empty_curly_brackets": r" *\{ *\} *",
+    "empty_parenthesis": r" *\( *\) *",
+    "empty_brackets": r" *\[ *\] *",
+}
+
 WEBSITES = {
-    "thepiratebay10.info": dict(
-        search="https://thepiratebay10.info/search/{query}/1/99/0",
-        filter=r"<?https:/{1,2}thepiratebay10\.info[a-zA-Z0-9\-.\/\?_=\&%]*>?",
-    )
+    "thepiratebay.org": dict(
+        search="https://www2.thepiratebay3.to/s/?q={query}", exclude_patterns=[]
+    ),
+    "nyaa.si": dict(
+        search="https://nyaa.si/?f=0&c=0_0&q={query}&s=seeders&o=desc",
+        exclude_patterns=["local_links"],
+    ),
 }
 
 MODELS = dict(
@@ -40,15 +55,7 @@ MODELS = dict(
     ),
 )
 
-PARAMS = dict(temperature=0.7, stream=False)
-
-
-def to_safe_url(text: str):
-    return quote(text)
-
-
-def extract_json(text: str):
-    return loads("[" + "]".join(text.split("[", 1)[1].split("]")[:-1]) + "]")
+PARAMS = dict(temperature=0.2, stream=False)
 
 
 class Torrent(BaseModel):
@@ -59,35 +66,62 @@ class Torrent(BaseModel):
     seeders: int
     leechers: int
     uploader: str
+    website_source: str
 
 
 class Results(BaseModel):
     torrents: List[Torrent]
 
 
-async def scrape(query: str, source: Optional[str] = None, max_chars=10000):
-    if source is None:
-        source = "thepiratebay10.info"
+def shrink_text(
+    text: str, exclude_patterns: Optional[List[str]] = None, max_chars=10000
+) -> str:
+    for name, pattern in FILTERS.items():
+        if exclude_patterns and name in exclude_patterns:
+            continue
+        text = re.sub(pattern, "", text)
+    truncated = text[:max_chars]
+    return "\n".join(truncated.split("\n")[:-1])
 
-    browser_config = BrowserConfig()
-    run_config = CrawlerRunConfig()
 
-    async with AsyncWebCrawler(config=browser_config) as crawler:
-        result = await crawler.arun(
-            url=WEBSITES[source]["search"].format(query=to_safe_url(query)),
-            config=run_config,
+async def scrape_torrents(query: str, sources: Optional[List[str]] = None) -> str:
+    browser_config = BrowserConfig(
+        browser_type="chromium",
+        headless=True,
+        text_mode=True,
+        light_mode=True,
+    )
+    md_generator = DefaultMarkdownGenerator(
+        options=dict(
+            ignore_images=True,
+            ignore_links=False,
+            skip_internal_links=True,
+            escape_html=True,
         )
-        result = re.sub(
-            WEBSITES[source]["filter"],
-            "",
-            result.markdown,
-        )
-        truncated = result[:max_chars]
-        truncated = "\n".join(truncated.split("\n")[:-1])
-        return truncated
+    )
+    run_config = CrawlerRunConfig(
+        markdown_generator=md_generator,
+        remove_overlay_elements=True,
+        exclude_social_media_links=True,
+        excluded_tags=["header", "footer", "nav"],
+        remove_forms=True,
+        cache_mode=CacheMode.DISABLED,
+    )
+
+    results = ""
+    async with AsyncWebCrawler(
+        config=browser_config, always_bypass_cache=True
+    ) as crawler:
+        for source, data in WEBSITES.items():
+            if sources is None or source in sources:
+                url = data["search"].format(query=quote(query))
+                result = await crawler.arun(url=url, config=run_config)
+                result = shrink_text(result.markdown, data["exclude_patterns"])
+                results += f"\nFOR WEBSITE SOURCE -> {source}:\n{result}\n----------"
+    return results
 
 
-def extract(text: str, llm: Optional[str] = None):
+def extract_results(text: str, llm: Optional[str] = None) -> str:
     if llm is None:
         llm = "groq"
 
@@ -100,7 +134,7 @@ def extract(text: str, llm: Optional[str] = None):
         messages=[
             {
                 "role": "system",
-                "content": f"Extract all torrent objects from the provided markdown content. NEVER truncate any magnet link. If no match, torrent list must be empty. ALWAYS ONLY respond following STRICTLY the given output JSON schema and by enforcing the double quote standard to make it valid and parseable:\n{dumps(Results.model_json_schema())}",
+                "content": f"Extract ALL torrent objects from the provided data without filtering. NEVER truncate magnet links. If no match, torrent list must be empty. ALWAYS ONLY respond following STRICTLY the given output JSON schema:\n{dumps(Results.model_json_schema()).replace(' ', '').replace('\n', '')}",
             },
             {
                 "role": "user",
@@ -113,17 +147,37 @@ def extract(text: str, llm: Optional[str] = None):
     return response.choices[0].message.content
 
 
-async def find_torrent_list(
-    query: str, source: Optional[str] = None, llm: Optional[str] = None, max_retries=1
-):
-    start_time = time.time()
-    results = await scrape(query, source=source)
+def extract_json(text: str) -> List[dict]:
+    return loads("[" + "]".join(text.split("[", 1)[1].split("]")[:-1]) + "]")
 
+
+def filtering_results(torrents: dict, min_peers=0) -> List[dict]:
+    return list(
+        sorted(
+            filter(
+                lambda torrent: torrent["seeders"] + torrent["leechers"] >= min_peers,
+                torrents,
+            ),
+            key=lambda torrent: torrent["seeders"] + torrent["leechers"],
+            reverse=True,
+        )
+    )
+
+
+async def find_torrent_list(
+    query: str,
+    sources: Optional[List[str]] = None,
+    llm: Optional[str] = None,
+    max_retries=2,
+) -> List[dict]:
+    start_time = time.time()
+    results = await scrape_torrents(query, sources=sources)
     retries, extracted = 0, ""
     while retries < max_retries:
         try:
-            extracted = extract(results, llm=llm)
+            extracted = extract_results(results, llm=llm)
             extracted = extract_json(extracted)
+            extracted = filtering_results(extracted)
             logger.info(f"Completed in {time.time() - start_time:.2f} sec.")
             return extracted
         except Exception as e:
@@ -138,7 +192,7 @@ async def find_torrent_list(
 # TOOL DEFINITION
 
 SEARCH_TORRENTS_PROMPT = """
-This tool will search for torrents using the provided query and return a list of found torrents. Results should never be displayed by the agent afterwards, since this tool output is always visible by the user. The agent can reply to signal the search success or failure.
+This tool will search for torrents using the provided query and return a list of found torrents. Results should NEVER be repeated by the agent afterwards, because this tool output is always visible for the user, but you should reply to signal the search success or failure and recommend the best file to choose from the list, following those specs ordered by priority: greater number of seeds, 1080p resolution minimum, smaller file size, and avoid x265 encoding (too compute intensive on a streaming device). If the results seem to be too heterogeneous, recommend to narrow down the search by asking additional keywords. Keep your answer short.
 """
 
 
@@ -164,7 +218,7 @@ class SearchTorrentsInput(BaseModel):
 
     query: str = Field(
         ...,
-        description="The query to search torrents for. e.g. `lord of the rings ebook`. Keywords used by users in their queries should be preserved.",
+        description="The query to search torrents for. Keywords used by users in their queries should be preserved.",
     )
 
 

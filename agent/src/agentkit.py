@@ -1,3 +1,4 @@
+import asyncio
 from logging import getLogger
 from os import getenv, makedirs, path
 
@@ -12,6 +13,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 from models import AgentMessage, UserMessage
 from prompts import SYSTEM_PROMPT
+from rich import print
 from tools import search_torrents_tool
 
 load_dotenv()
@@ -105,25 +107,31 @@ class Agent:
         for chunk in self.agent_executor.stream(new_message, config):
             if "agent" in chunk:
                 content = chunk["agent"]["messages"][0].content.strip()
-                print(f"AGENT:\n{content}")
+                print(
+                    f"---------- AGENT RESPONSE -----------\n{content}\n---------- AGENT END ----------------"
+                )
                 yield AgentMessage(
                     **ids,
                     message=content,
                 )
             if "tools" in chunk:
                 content = chunk["tools"]["messages"][0].content.strip()
-                message = content if content.startswith("<tool-") else "<hidden-tool>"
-                if message == "<hidden-tool>":
-                    print(f"TOOLS (hidden):\n{content}")
+                message = content if content.startswith("<tool-") else ""
+                if message:
+                    print(
+                        f"---------- TOOLS (visible) ----------\n{content}\n---------- TOOLS END ----------------"
+                    )
                 else:
-                    print(f"TOOLS (sent):\n{content}")
+                    print(
+                        f"---------- TOOLS (hidden) -----------\n{content}\n---------- TOOLS END ----------------"
+                    )
                 yield AgentMessage(**ids, message=message)
 
     async def chat(self, msg: UserMessage) -> AgentMessage:
         chunks = []
         async for message in self.chat_stream(msg):
             text = message.get("message")
-            if text != "<hidden-tool>":
+            if text:
                 chunks.append(text)
         ids = dict(user_id=msg.get("user_id"), chat_id=msg.get("chat_id"))
         return AgentMessage(
@@ -138,10 +146,4 @@ async def chat_test(message: str):
 
 
 if __name__ == "__main__":
-    import asyncio
-
-    load_dotenv()
-    coloredlogs.install()
-    from rich import print
-
     asyncio.run(chat_test("Search torrents for: gladiator"))
