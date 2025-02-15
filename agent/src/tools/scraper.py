@@ -4,12 +4,11 @@ import time
 from json import dumps, loads
 from logging import getLogger
 from os import getenv
-from typing import List, Optional
+from typing import Any, List, Optional
 from urllib.parse import quote
 
 import coloredlogs
-from cdp_langchain.tools import CdpTool
-from cdp_langchain.utils import CdpAgentkitWrapper
+from coinbase_agentkit import ActionProvider, WalletProvider, create_action
 from crawl4ai import AsyncWebCrawler, CacheMode
 from crawl4ai.async_configs import BrowserConfig, CrawlerRunConfig
 from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
@@ -218,42 +217,32 @@ async def find_torrent_list(
 
 # TOOL DEFINITION
 
-SEARCH_TORRENTS_PROMPT = """
-This tool will search for torrents using the provided query and return a list of found torrents. Results should NEVER be repeated by the agent afterwards, because this tool output is always visible for the user, but you should reply to signal the search success or failure and recommend the best file to choose from the list, following those specs ordered by priority: greater number of seeds, 1080p resolution minimum, smaller file size, and avoid x265 encoding (too compute intensive on a streaming device). If the results seem to be too heterogeneous, recommend to narrow down the search by asking additional keywords. Keep your answer short.
-"""
 
-
-def search_torrents(query: str) -> str:
-    """Search for torrents using the provided query.
-
-    Args:
-        query (str): The query to search torrents for.
-
-    Returns:
-        str: The list of found torrents.
-
-    """
-
-    torrents = asyncio.run(find_torrent_list(query))
-    if not torrents:
-        logger.error("No result found.")
-    return f'<tool-search-torrents>{{"torrents": {dumps(torrents)}}}</tool-search-torrents>'
-
-
-class SearchTorrentsInput(BaseModel):
-    """Input argument schema for search torrents action."""
-
-    query: str = Field(
+class SearchTorrentsSchema(BaseModel):
+    keywords: str = Field(
         ...,
-        description="The query to search torrents for. Keywords used by users in their queries should be preserved.",
+        description="Space-separated keywords to search torrents for. Keywords used by users should be preserved.",
     )
 
 
-def search_torrents_tool(agentkit: CdpAgentkitWrapper):
-    return CdpTool(
-        cdp_agentkit_wrapper=agentkit,
-        name="search_torrents",
-        description=SEARCH_TORRENTS_PROMPT,
-        func=search_torrents,
-        args_schema=SearchTorrentsInput,
+class ScraperActionProvider(ActionProvider[WalletProvider]):
+    def __init__(self):
+        super().__init__("scraper-action-provider", [])
+
+    def supports_network(self, *args, **kwargs) -> bool:
+        return True
+
+    @create_action(
+        name="search-torrents",
+        description="""This tool will search for torrents using the provided space-separated keywords and return a list of found torrents. Results should NEVER be repeated by the agent afterwards, because this tool output is always visible for the user, but you should reply to signal the search success or failure and recommend the best file to choose from the list, following those specs ordered by priority: greater number of seeds, 1080p resolution minimum, smaller file size, and avoid x265 encoding (too compute intensive on a streaming device). If the results seem to be too heterogeneous, recommend to narrow down the search by asking additional keywords. Keep your answer short.""",
+        schema=SearchTorrentsSchema,
     )
+    def search_torrents(self, args: dict[str, Any]) -> str:
+        torrents = asyncio.run(find_torrent_list(args["keywords"]))
+        if not torrents:
+            logger.error("No result found.")
+        return f'<tool-search-torrents>{{"torrents": {dumps(torrents)}}}</tool-search-torrents>'
+
+
+def scraper_action_provider():
+    return ScraperActionProvider()

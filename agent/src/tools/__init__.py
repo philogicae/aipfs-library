@@ -1,3 +1,3 @@
-from .scraper import find_torrent_list, search_torrents_tool
+from .scraper import find_torrent_list, scraper_action_provider
 
-__all__ = ["find_torrent_list", "search_torrents_tool"]
+__all__ = ["scraper_action_provider", "find_torrent_list"]

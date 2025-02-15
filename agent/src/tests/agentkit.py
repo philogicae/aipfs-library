@@ -1,9 +1,21 @@
+from json import dumps
 from logging import getLogger
 from os import getenv, makedirs, path
 
 import coloredlogs
-from cdp_langchain.agent_toolkits import CdpToolkit
-from cdp_langchain.utils import CdpAgentkitWrapper
+from coinbase_agentkit import (
+    AgentKit,
+    AgentKitConfig,
+    CdpWalletProvider,
+    CdpWalletProviderConfig,
+    cdp_api_action_provider,
+    cdp_wallet_action_provider,
+    erc20_action_provider,
+    pyth_action_provider,
+    wallet_action_provider,
+    weth_action_provider,
+)
+from coinbase_agentkit_langchain import get_langchain_tools
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
@@ -29,23 +41,37 @@ def initialize_agent():
     if path.exists(wallet_data_file):
         with open(wallet_data_file, encoding="utf-8") as f:
             wallet_data = f.read()
-    values = {}
+    cdp_config = None
     if wallet_data is not None:
-        values = {"cdp_wallet_data": wallet_data}
+        cdp_config = CdpWalletProviderConfig(wallet_data=wallet_data)
 
-    agentkit = CdpAgentkitWrapper(**values)
+    wallet_provider = CdpWalletProvider(cdp_config)
 
-    wallet_data = agentkit.export_wallet()
+    wallet_data_json = dumps(wallet_provider.export_wallet().to_dict())
     with open(wallet_data_file, "w", encoding="utf-8") as f:
-        f.write(wallet_data)
+        f.write(wallet_data_json)
 
-    # Initialize CDP and tools
-    cdp_toolkit = CdpToolkit.from_cdp_agentkit_wrapper(agentkit)
-    tools = cdp_toolkit.get_tools()
+    # Initialize AgentKit
+    agentkit = AgentKit(
+        AgentKitConfig(
+            wallet_provider=wallet_provider,
+            action_providers=[
+                cdp_api_action_provider(),
+                cdp_wallet_action_provider(),
+                erc20_action_provider(),
+                pyth_action_provider(),
+                wallet_action_provider(),
+                weth_action_provider(),
+            ],
+        )
+    )
+
+    # Get Tools
+    tools = get_langchain_tools(agentkit)
 
     # Store buffered conversation history in memory.
     memory = MemorySaver()
-    config = {"configurable": {"thread_id": "CDP Agentkit Chatbot Example!"}}
+    conf = {"configurable": {"thread_id": "CDP Agentkit Chatbot Example!"}}
 
     # Create ReAct Agent using the LLM and CDP Agentkit tools.
     return (
@@ -65,11 +91,12 @@ def initialize_agent():
                 "responses. Refrain from restating your tools' descriptions unless it is explicitly requested."
             ),
         ),
-        config,
+        conf,
     )
 
 
-def run_chat_mode(agent_executor, config):
+def run_chat_mode():
+    agent_executor, config = initialize_agent()
     print("Starting chat mode... Type 'exit' to end.")
     while True:
         try:
@@ -91,5 +118,4 @@ def run_chat_mode(agent_executor, config):
 
 if __name__ == "__main__":
     print("Starting Agent...")
-    agent_executor, config = initialize_agent()
-    run_chat_mode(agent_executor=agent_executor, config=config)
+    run_chat_mode()

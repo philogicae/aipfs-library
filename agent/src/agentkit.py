@@ -1,27 +1,35 @@
 import asyncio
+from json import dumps
 from logging import getLogger
 from os import getenv, makedirs, path
 
 import coloredlogs
-from cdp_langchain.agent_toolkits import CdpToolkit
-from cdp_langchain.utils import CdpAgentkitWrapper
+from coinbase_agentkit import (
+    AgentKit,
+    AgentKitConfig,
+    CdpWalletProvider,
+    CdpWalletProviderConfig,
+    cdp_api_action_provider,
+    wallet_action_provider,
+)
+from coinbase_agentkit_langchain import get_langchain_tools
 from dotenv import load_dotenv
+from langchain.tools import StructuredTool
 from langchain_core.messages import HumanMessage
-from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 from models import AgentMessage, UserMessage
 from prompts import SYSTEM_PROMPT
 from rich import print
-from tools import search_torrents_tool
+from tools import scraper_action_provider
 
 load_dotenv()
 coloredlogs.install()
 logger = getLogger("agent")
 
 
-def create_agentkit_wallet() -> CdpAgentkitWrapper:
+def create_wallet_provider() -> CdpWalletProvider:
     # Wallet dir/path
     data_dir = path.join(path.dirname(path.dirname(__file__)), "data")
     makedirs(data_dir, exist_ok=True)
@@ -33,22 +41,34 @@ def create_agentkit_wallet() -> CdpAgentkitWrapper:
         with open(wallet_data_file, encoding="utf-8") as f:
             wallet_data = f.read()
 
-    # Create wrapper values
-    wrapper_values = {}
-    if wallet_data:
-        wrapper_values = {"cdp_wallet_data": wallet_data}
+    # Create wallet provider
+    cdp_config = None
+    if wallet_data is not None:
+        cdp_config = CdpWalletProviderConfig(wallet_data=wallet_data)
 
-    # Create agentkit obj
-    agentkit = CdpAgentkitWrapper(**wrapper_values)
+    wallet_provider = CdpWalletProvider(cdp_config)
 
     # If new, save Wallet
     if not path.exists(wallet_data_file):
-        wallet_data = agentkit.export_wallet()
+        wallet_data_json = dumps(wallet_provider.export_wallet().to_dict())
         with open(wallet_data_file, "w", encoding="utf-8") as f:
-            f.write(wallet_data)
+            f.write(wallet_data_json)
 
     logger.info("Wallet: ready")
-    return agentkit
+    return wallet_provider
+
+
+def create_agentkit(wallet_provider: CdpWalletProvider) -> AgentKit:
+    return AgentKit(
+        AgentKitConfig(
+            wallet_provider=wallet_provider,
+            action_providers=[
+                cdp_api_action_provider(),
+                wallet_action_provider(),
+                scraper_action_provider(),
+            ],
+        )
+    )
 
 
 def create_llm() -> ChatOpenAI:
@@ -62,18 +82,18 @@ def create_llm() -> ChatOpenAI:
     return llm
 
 
-def create_tools(agentkit: CdpAgentkitWrapper) -> list[BaseTool]:
-    cdp_toolkit = CdpToolkit.from_cdp_agentkit_wrapper(agentkit)
-    allowed_tools = ["get_wallet_details", "get_balance"]
+def create_tools(agentkit: AgentKit) -> list[StructuredTool]:
+    tools = get_langchain_tools(agentkit)
+    allowed_tools = [
+        "CdpApiActionProvider_request_faucet_funds",
+        "WalletActionProvider_get_balance",
+        "WalletActionProvider_get_wallet_details",
+        "ScraperActionProvider_search_torrents",
+    ]
 
     # Filter CDP Tools
-    tools = [tool for tool in cdp_toolkit.get_tools() if tool.name in allowed_tools]
-    logger.info("CDP Tools: ready")
-
-    # Add Custom Tools
-    tools.append(search_torrents_tool(agentkit))
-    logger.info("Custom Tools: ready")
-
+    tools = [tool for tool in tools if tool.name in allowed_tools]
+    logger.info("Tools: ready")
     return tools
 
 
@@ -85,12 +105,15 @@ def create_memory():
 
 class Agent:
     def __init__(self):
+        wallet = create_wallet_provider()
+        agentkit = create_agentkit(wallet)
+        tools = create_tools(agentkit)
         self.agent_executor = create_react_agent(
             version="v1",
             name="aipfs-library-agent",
             prompt=SYSTEM_PROMPT,
             model=create_llm(),
-            tools=create_tools(create_agentkit_wallet()),
+            tools=tools,
             checkpointer=create_memory(),
             # store=
         )
@@ -147,4 +170,4 @@ async def chat_test(message: str):
 
 
 if __name__ == "__main__":
-    asyncio.run(chat_test("Search torrents for: gladiator"))
+    asyncio.run(chat_test("Search torrents for: severance"))

@@ -1,1 +1,4 @@
-cdp-langchain==0.0.13
+langchain-openai==0.3.5
+langgraph==0.2.72
+coinbase-agentkit==0.1.2
+coinbase-agentkit-langchain==0.1.0
