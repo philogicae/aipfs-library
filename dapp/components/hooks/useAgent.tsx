@@ -1,11 +1,11 @@
 import { useAppState } from '@components/context/AppState'
+import useManager from '@components/hooks/useManager'
 import { useCallback } from 'react'
 import { useNavigate } from 'react-router'
-import useManager from '@components/hooks/useManager'
 
 const call = async (
 	data: any,
-	parser = (output: any) => output,
+	parser = (output: any) => output
 ): Promise<any> => {
 	try {
 		const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/chat`, {
@@ -42,7 +42,7 @@ export default function useAgent() {
 					role: string
 					content: string
 				}[]
-			>,
+			>
 		): Promise<undefined> => {
 			setIsLoading(true)
 			const chat_id = profile.chat_ids.at(-1) as string
@@ -66,6 +66,6 @@ export default function useAgent() {
 			}
 			setIsLoading(false)
 		},
-		[navigate, profile],
+		[navigate, profile]
 	)
 }

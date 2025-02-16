@@ -1,11 +1,11 @@
-import { type RefObject, useEffect, useMemo, useRef, useState } from 'react'
-import { TerminalFrame } from '@components/elements/TerminalFrame'
-import Background from '@components/layout/Background'
 import { useAppState } from '@components/context/AppState'
-import useAgent from '@components/hooks/useAgent'
 import Message from '@components/elements/Message'
+import { TerminalFrame } from '@components/elements/TerminalFrame'
+import useAgent from '@components/hooks/useAgent'
+import Background from '@components/layout/Background'
 //import { WalletDefault } from '@coinbase/onchainkit/wallet'
 import { extractToolContent } from '@components/utils/parser'
+import { type RefObject, useEffect, useMemo, useRef, useState } from 'react'
 
 const adjustHeight = (element: RefObject<HTMLTextAreaElement>) => {
 	const el = element.current
@@ -16,8 +16,7 @@ const adjustHeight = (element: RefObject<HTMLTextAreaElement>) => {
 }
 
 export default function Terminal() {
-	const { hasTyped, setHasTyped, isLoading, profile, history, setHistory } =
-		useAppState();
+	const { isLoading, profile, history, setHistory } = useAppState()
 	const messagesContainerRef = useRef<HTMLDivElement>(null)
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
 	const [value, setValue] = useState('')
@@ -29,18 +28,17 @@ export default function Terminal() {
 	}
 
 	const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-		!hasTyped && setHasTyped(true)
 		if (event.key === 'Enter') {
 			event.preventDefault()
 			const message = value.trim()
 			if (message) {
-				setValue("");
+				setValue('')
 				const new_history = {
 					...history,
-					[chat_id]: [...history[chat_id], { role: "you", content: message }],
+					[chat_id]: [...history[chat_id], { role: 'you', content: message }],
 				}
 				setHistory(new_history)
-				callAgent(message, new_history);
+				callAgent(message, new_history)
 			}
 		}
 	}
@@ -61,28 +59,32 @@ export default function Terminal() {
 				ref={messagesContainerRef}
 				className="flex flex-col w-full h-full items-start justify-start p-3 sm:py-4 sm:px-6 gap-3 text-sm overflow-y-auto scrollbar-hide z-40"
 			>
-				{history[profile.chat_ids.at(-1) as string].map((msg, index) => {
-					const parsed_messages = msg.role === 'agent' ? extractToolContent(msg.content, 'search-torrents') as { role: string, content: string }[] : [{ role: msg.role, content: msg.content }]
-					return parsed_messages.map((parsed_msg, contentIndex) =>{ 
-						return <Message key={`msg-${index}-${contentIndex}`} msg={parsed_msg} />
-					})
+				{history[chat_id].map((msg, index) => {
+					const parsed_messages =
+						msg.role === "agent"
+							? (extractToolContent(msg.content, "search-torrents") as {
+									role: string;
+									content: string;
+								}[])
+							: [{ role: msg.role, content: msg.content }];
+					return parsed_messages.map((parsed_msg, contentIndex) => {
+						return (
+							<Message key={`msg-${index}-${contentIndex}`} msg={parsed_msg} />
+						);
+					});
 				})}
 				{isLoading && (
 					<div>
 						<Message
 							msg={{
 								role: "agent",
-								content: (
-									<div className="animate-pulse">
-										{"*thinking...*"}
-									</div>
-								),
+								content: <div className="animate-pulse">{"*thinking...*"}</div>,
 							}}
 						/>
 					</div>
 				)}
 			</div>
-			<div className="flex flex-row w-full items-start halo-text text-md sm:text-lg bg-gray-900 p-2 pt-1 z-50">
+			<div className="flex flex-row w-full items-start halo-text text-md sm:text-lg bg-gray-950 p-2 pt-1 z-50 border border-green-500">
 				<span className="text-xl sm:text-2xl pr-2 pb-0.5">{">"}</span>
 				<textarea
 					ref={textareaRef}
@@ -91,8 +93,7 @@ export default function Terminal() {
 					value={value}
 					onChange={handleInputChange}
 					onKeyDown={handleKeyDown}
-					className="outline-none bg-transparent w-full pt-0.5 resize-none min-h-[24px] overflow-hidden"
-					autoFocus={true}
+					className="outline-none bg-transparent w-full pt-0.5 resize-none min-h-[24px] overflow-hidden placeholder:text-gray-700"
 					autoComplete="off"
 					placeholder="chat with the agent"
 					rows={1}

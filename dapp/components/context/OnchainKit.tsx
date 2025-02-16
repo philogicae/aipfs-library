@@ -9,7 +9,7 @@ export function OnchainKit({ children }: { children: React.ReactNode }) {
 			apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}
 			chain={baseSepolia}
 			config={{
-				appearance: { mode: "dark", theme: "default" },
+				appearance: { mode: 'dark', theme: 'default' },
 			}}
 		>
 			{children}

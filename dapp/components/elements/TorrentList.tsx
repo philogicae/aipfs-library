@@ -1,12 +1,12 @@
+import Message from '@components/elements/Message'
 import {
 	Table,
-	TableHeader,
-	TableColumn,
 	TableBody,
-	TableRow,
 	TableCell,
+	TableColumn,
+	TableHeader,
+	TableRow,
 } from '@heroui/react'
-import Message from '@components/elements/Message'
 
 export interface TorrentType {
 	filename: string
@@ -76,5 +76,5 @@ export default function TorrentList({
 		</Table>
 	) : (
 		<Message msg={{ role: 'tool', content: 'search-torrents -> no result' }} />
-	);
+	)
 }
