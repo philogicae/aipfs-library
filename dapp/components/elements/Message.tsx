@@ -17,7 +17,7 @@ export default function Message({
 		) {
 			return <TorrentList torrent_data={torrent_data as TorrentResultsType} />
 		}
-	} catch (_e) {
+	} catch {
 		return <Message msg={{ role: 'info', content: 'Error parsing result' }} />
 	}
 	return (

@@ -2,7 +2,7 @@
 
 import Home from '@components/frames/Home'
 import Loading from '@components/frames/Loading'
-import NotFound from '@components/frames/NotFound'
+import { NotFoundIn } from '@components/frames/NotFound'
 import Unavailable from '@components/frames/Unavailable'
 import { useEffect, useState } from 'react'
 import { createHashRouter } from 'react-router'
@@ -37,7 +37,7 @@ export default function Router() {
 				},
 				{
 					path: '*',
-					element: <NotFound />,
+					element: <NotFoundIn />,
 					hydrateFallbackElement,
 				},
 			])

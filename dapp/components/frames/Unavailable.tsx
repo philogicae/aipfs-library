@@ -4,10 +4,10 @@ import TerminalFrame from '@components/elements/TerminalFrame'
 import PageWrapper from '@components/layout/PageWrapper'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import { Button } from '@heroui/react'
-import { useRouter } from 'next/navigation'
+import { useNavigate } from 'react-router'
 
 export default function Unavailable() {
-	const router = useRouter()
+	const navigate = useNavigate()
 	return (
 		<PageWrapper>
 			<TerminalFrame subTitle='lost signal'>
@@ -21,7 +21,7 @@ export default function Unavailable() {
 					</div>
 					<Button
 						className='mt-3 font-extrabold text-black text-sm'
-						onPress={() => router.push('/')}
+						onPress={() => navigate('/')}
 						radius='sm'
 						color='success'
 						size='sm'

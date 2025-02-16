@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import '@app/globals.css'
-import '@coinbase/onchainkit/styles.css'
+//import '@coinbase/onchainkit/styles.css'
 import AppState from '@components/context/AppState'
-import { OnchainKit } from '@components/context/OnchainKit'
+//import { OnchainKit } from '@components/context/OnchainKit'
 import { HeroUI } from '@components/layout/HeroUI'
 
 const SITE_NAME = 'aipfs-library'
@@ -78,7 +78,8 @@ export default function RootLayout({
 			<body>
 				<HeroUI>
 					<AppState>
-						<OnchainKit>{children}</OnchainKit>
+						{/* <OnchainKit>{children}</OnchainKit> */}
+						{children}
 					</AppState>
 				</HeroUI>
 			</body>

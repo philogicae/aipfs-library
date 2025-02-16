@@ -4,10 +4,10 @@ import TerminalFrame from '@components/elements/TerminalFrame'
 import PageWrapper from '@components/layout/PageWrapper'
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
 import { Button } from '@heroui/react'
+import { useNavigate } from 'react-router'
 import { useRouter } from 'next/navigation'
 
-export default function NotFound() {
-	const router = useRouter()
+function NotFound({ redirect_func }: { redirect_func: () => void }) {
 	return (
 		<PageWrapper>
 			<TerminalFrame subTitle='lost signal'>
@@ -17,11 +17,11 @@ export default function NotFound() {
 						404 NOT FOUND
 					</div>
 					<div className='text-lg text-gray-500 leading-relaxed'>
-						the page does not exist
+						this page does not exist
 					</div>
 					<Button
 						className='mt-3 font-extrabold text-black text-sm'
-						onPress={() => router.push('/')}
+						onPress={redirect_func}
 						radius='sm'
 						color='success'
 						size='sm'
@@ -31,5 +31,29 @@ export default function NotFound() {
 				</div>
 			</TerminalFrame>
 		</PageWrapper>
+	)
+}
+
+export function NotFoundOut() {
+	const router = useRouter()
+	return (
+		<NotFound
+			redirect_func={() => {
+				console.log('native-router')
+				router.push('/')
+			}}
+		/>
+	)
+}
+
+export function NotFoundIn() {
+	const navigate = useNavigate()
+	return (
+		<NotFound
+			redirect_func={() => {
+				console.log('navigate')
+				navigate('/')
+			}}
+		/>
 	)
 }
