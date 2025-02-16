@@ -8,17 +8,19 @@ from typing import Any, List, Optional
 from urllib.parse import quote
 
 import coloredlogs
-from coinbase_agentkit import ActionProvider, WalletProvider, create_action
-from crawl4ai import AsyncWebCrawler, CacheMode
-from crawl4ai.async_configs import BrowserConfig, CrawlerRunConfig
-from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
 from dotenv import load_dotenv
-from openai import OpenAI
 from pydantic import BaseModel, Field
 
 load_dotenv()
 coloredlogs.install()
 logger = getLogger("scraper")
+
+
+from coinbase_agentkit import ActionProvider, WalletProvider, create_action
+from crawl4ai import AsyncWebCrawler, CacheMode
+from crawl4ai.async_configs import BrowserConfig, CrawlerRunConfig
+from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
+from openai import OpenAI
 
 FILTERS = {
     "full_links": r"(http|https|ftp):[/]{1,2}[a-zA-Z0-9.]+[a-zA-Z0-9./?=+~_\-@:%#&]*",
@@ -234,7 +236,7 @@ class ScraperActionProvider(ActionProvider[WalletProvider]):
 
     @create_action(
         name="search-torrents",
-        description="""This tool will search for torrents using the provided space-separated keywords and return a list of found torrents. Results should NEVER be repeated by the agent afterwards, because this tool output is always visible for the user, but you should reply to signal the search success or failure and recommend the best file to choose from the list, following those specs ordered by priority: greater number of seeds, 1080p resolution minimum, smaller file size, and avoid x265 encoding (too compute intensive on a streaming device). If the results seem to be too heterogeneous, recommend to narrow down the search by asking additional keywords. Keep your answer short.""",
+        description="""This tool will search for torrents using the provided space-separated keywords and return a list of found torrents. Results should NEVER be repeated by the agent afterwards, because this tool output is always visible for the user, but you should reply to signal the search success or failure and recommend the best file to choose from the list, following those specs ordered by priority: greater number of seeds, 1080p resolution minimum, smaller file size, and avoid x265 encoding (too compute intensive on a streaming device). If the results seem to be too heterogeneous, recommend to narrow down the search by asking additional keywords. Comply to user's request and keep your answer short.""",
         schema=SearchTorrentsSchema,
     )
     def search_torrents(self, args: dict[str, Any]) -> str:

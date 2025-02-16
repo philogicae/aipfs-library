@@ -15,12 +15,12 @@ from aioipfs import AsyncIPFS
 
 async def add_to_ipfs(
     file_path: str, host: str = getenv("IPFS_HOST", "ipfs-node"), port: int = 5001
-) -> str:
+) -> dict[str, str]:
     if not Path(file_path).exists():
         logger.error(f"File not found: {file_path}")
         return None
 
-    files = []
+    files = {}
     try:
         client = AsyncIPFS(host=host, port=port)
         logger.info(f"Connecting to IPFS node at {host}:{port}...")
@@ -45,8 +45,8 @@ async def main():
     test_file = __file__
     files = await add_to_ipfs(test_file)
     if files:
-        for file in files:
-            logger.info(f"{file['Name']}: https://ipfs.io/ipfs/{file['Hash']}")
+        for fname, fhash in files.items():
+            logger.info(f"{fname}: https://ipfs.io/ipfs/{fhash}")
     else:
         logger.info("\nFailed to add file to IPFS")
 

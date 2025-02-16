@@ -4,6 +4,13 @@ from logging import getLogger
 from os import getenv, makedirs, path
 
 import coloredlogs
+from dotenv import load_dotenv
+from rich import print
+
+load_dotenv()
+coloredlogs.install()
+logger = getLogger("agent")
+
 from coinbase_agentkit import (
     AgentKit,
     AgentKitConfig,
@@ -13,20 +20,16 @@ from coinbase_agentkit import (
     wallet_action_provider,
 )
 from coinbase_agentkit_langchain import get_langchain_tools
-from dotenv import load_dotenv
 from langchain.tools import StructuredTool
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
+from langgraph.store.memory import InMemoryStore
+
 from models import AgentMessage, UserMessage
 from prompts import SYSTEM_PROMPT
-from rich import print
-from tools import scraper_action_provider
-
-load_dotenv()
-coloredlogs.install()
-logger = getLogger("agent")
+from tools import downloader_action_provider, scraper_action_provider
 
 
 def create_wallet_provider() -> CdpWalletProvider:
@@ -66,6 +69,7 @@ def create_agentkit(wallet_provider: CdpWalletProvider) -> AgentKit:
                 cdp_api_action_provider(),
                 wallet_action_provider(),
                 scraper_action_provider(),
+                downloader_action_provider(),
             ],
         )
     )
@@ -89,6 +93,7 @@ def create_tools(agentkit: AgentKit) -> list[StructuredTool]:
         "WalletActionProvider_get_balance",
         "WalletActionProvider_get_wallet_details",
         "ScraperActionProvider_search_torrents",
+        "DownloaderActionProvider_download_to_ipfs",
     ]
 
     # Filter CDP Tools
@@ -97,9 +102,15 @@ def create_tools(agentkit: AgentKit) -> list[StructuredTool]:
     return tools
 
 
-def create_memory():
+def create_short_term_memory():
     memory = MemorySaver()
-    logger.info("Memory: ready")
+    logger.info("Short-term Memory: ready")
+    return memory
+
+
+def create_long_term_memory():
+    memory = InMemoryStore()
+    logger.info("Long-term Memory: ready")
     return memory
 
 
@@ -114,8 +125,8 @@ class Agent:
             prompt=SYSTEM_PROMPT,
             model=create_llm(),
             tools=tools,
-            checkpointer=create_memory(),
-            # store=
+            checkpointer=create_short_term_memory(),
+            store=create_long_term_memory(),
         )
         logger.info("Agent: ready")
 
@@ -131,25 +142,27 @@ class Agent:
         for chunk in self.agent_executor.stream(new_message, config):
             if "agent" in chunk:
                 content = chunk["agent"]["messages"][0].content.strip()
-                print(
-                    f"---------- AGENT RESPONSE -----------\n{content}\n---------- AGENT END ----------------"
-                )
-                yield AgentMessage(
-                    **ids,
-                    message=content,
-                )
+                if content:
+                    print(
+                        f"---------- AGENT RESPONSE -----------\n{content}\n---------- AGENT END ----------------"
+                    )
+                    yield AgentMessage(
+                        **ids,
+                        message=content,
+                    )
             if "tools" in chunk:
                 content = chunk["tools"]["messages"][0].content.strip()
                 message = content if content.startswith("<tool-") else ""
-                if message:
-                    print(
-                        f"---------- TOOLS (visible) ----------\n{content}\n---------- TOOLS END ----------------"
-                    )
-                else:
-                    print(
-                        f"---------- TOOLS (hidden) -----------\n{content}\n---------- TOOLS END ----------------"
-                    )
-                yield AgentMessage(**ids, message=message)
+                if content:
+                    if message:
+                        print(
+                            f"---------- TOOLS (hidden) ----------\n{content}\n---------- TOOLS END ----------------"
+                        )
+                    else:
+                        print(
+                            f"---------- TOOLS (visible) -----------\n{content}\n---------- TOOLS END ----------------"
+                        )
+                    yield AgentMessage(**ids, message=message)
 
     async def chat(self, msg: UserMessage) -> AgentMessage:
         chunks = []
