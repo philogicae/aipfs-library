@@ -10,10 +10,16 @@ services:
     ports:
       - "17890:1789"
     volumes:
+      - app_data:/app/data
       - shared_data:/shared
     env_file:
       - ../.env
     restart: unless-stopped
+    dns:
+      - 9.9.9.9
+      - 149.112.112.112
+      - 2620:fe::fe
+      - 2620:fe::9
     logging:
       driver: "json-file"
       options:
@@ -55,6 +61,7 @@ networks:
     driver: bridge
 
 volumes:
+  app_data:
   shared_data:
   ipfs_data:
   ipfs_staging:
