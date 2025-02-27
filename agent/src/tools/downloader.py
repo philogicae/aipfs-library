@@ -1,4 +1,4 @@
-import asyncio
+from asyncio import run
 from json import dumps, loads
 from logging import getLogger
 from os import getenv, makedirs, path, walk
@@ -17,7 +17,13 @@ from coinbase_agentkit import ActionProvider, WalletProvider, create_action
 from openai import OpenAI
 from torrentp import TorrentDownloader
 
-DOWNLOAD_DIR = "/shared/downloads"
+DOWNLOAD_DIR = (
+    "/shared/downloads"
+    if path.exists("/shared")
+    else path.join(
+        path.dirname(path.dirname(path.dirname(__file__))), "shared/downloads"
+    )
+)
 makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 
@@ -143,7 +149,7 @@ class DownloaderActionProvider(ActionProvider[WalletProvider]):
         schema=DownloadToIPFSSchema,
     )
     def download_to_ipfs(self, args: dict[str, Any]) -> str:
-        files = asyncio.run(download(args["filename"], args["magnet_link"]))
+        files = run(download(args["filename"], args["magnet_link"]))
         return f"<download-to-ipfs>{dumps(files)}</download-to-ipfs>"
 
 

@@ -1,9 +1,9 @@
-import asyncio
-import re
-import time
+from asyncio import run
 from json import dumps, loads
 from logging import getLogger
 from os import getenv
+from re import sub
+from time import time
 from typing import Any, List, Optional
 from urllib.parse import quote
 
@@ -93,13 +93,13 @@ def shrink_text(
     for name, pattern in FILTERS.items():
         if exclude_patterns and name in exclude_patterns:
             continue
-        text = re.sub(pattern, "", text)
+        text = sub(pattern, "", text)
     for name, replacer in REPLACERS.items():
         if exclude_patterns and name in exclude_patterns:
             continue
-        text = re.sub(replacer[0], replacer[1], text)
+        text = sub(replacer[0], replacer[1], text)
     truncated = text[:max_chars]
-    return re.sub(r"\n+", "\n", "\n".join(truncated.split("\n")[:-1])).strip()
+    return sub(r"\n+", "\n", "\n".join(truncated.split("\n")[:-1])).strip()
 
 
 async def scrape_torrents(query: str, sources: Optional[List[str]] = None) -> str:
@@ -198,7 +198,7 @@ async def find_torrent_list(
     llm: Optional[str] = None,
     max_retries=3,
 ) -> List[dict]:
-    start_time = time.time()
+    start_time = time()
     results = await scrape_torrents(query, sources=sources)
     retries, extracted = 0, ""
     while retries < max_retries:
@@ -206,14 +206,14 @@ async def find_torrent_list(
             extracted = extract_results(results, llm=llm)
             extracted = extract_json(extracted)
             extracted = filtering_results(extracted)
-            logger.info(f"Completed in {time.time() - start_time:.2f} sec.")
+            logger.info(f"Completed in {time() - start_time:.2f} sec.")
             return extracted
         except Exception as e:
             logger.error(e)
             retries += 1
             if retries >= max_retries:
                 logger.error("Max retries reached.")
-                logger.info(f"Failed in {time.time() - start_time:.2f} sec.")
+                logger.info(f"Failed in {time() - start_time:.2f} sec.")
     return []
 
 
@@ -240,7 +240,7 @@ class ScraperActionProvider(ActionProvider[WalletProvider]):
         schema=SearchTorrentsSchema,
     )
     def search_torrents(self, args: dict[str, Any]) -> str:
-        torrents = asyncio.run(find_torrent_list(args["keywords"]))
+        torrents = run(find_torrent_list(args["keywords"]))
         if not torrents:
             logger.error("No result found.")
         return f'<tool-search-torrents>{{"torrents": {dumps(torrents)}}}</tool-search-torrents>'
