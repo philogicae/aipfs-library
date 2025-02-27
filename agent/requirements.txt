@@ -5,6 +5,7 @@ robyn==0.65.0
 Crawl4ai==0.4.248
 aioipfs==0.7.1
 torrentp==0.2.3
+aiosqlite==0.21.0
 #addict
 #SQLAlchemy
 #requests

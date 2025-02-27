@@ -1,4 +1,5 @@
-langchain-openai==0.3.5
-langgraph==0.2.72
-coinbase-agentkit==0.1.2
+langchain-openai==0.3.6
+langgraph==0.2.74
+coinbase-agentkit==0.1.3
 coinbase-agentkit-langchain==0.1.0
+langgraph-checkpoint-sqlite==2.0.5
