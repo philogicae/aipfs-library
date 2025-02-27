@@ -7,11 +7,12 @@ load_dotenv()
 coloredlogs.install()
 logger = getLogger("server")
 
-from agentkit import Agent
-from models import UserMessage
 from robyn import ALLOW_CORS, Request, Response, Robyn
 from robyn.openapi import Components, OpenAPI, OpenAPIInfo
 from robyn.status_codes import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
+
+from agentkit import Agent
+from models import UserMessage
 
 agent = Agent()
 
@@ -31,7 +32,7 @@ ALLOW_CORS(app, origins=["*"])
 
 async def startup():
     logger.info("Starting up...")
-    # ...
+    await agent.init()
     logger.info("Ready!")
 
 

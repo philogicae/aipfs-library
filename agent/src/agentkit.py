@@ -1,4 +1,4 @@
-import asyncio
+from asyncio import run
 from json import dumps
 from logging import getLogger
 from os import getenv, makedirs, path
@@ -11,6 +11,7 @@ load_dotenv()
 coloredlogs.install()
 logger = getLogger("agent")
 
+from aiosqlite import connect
 from coinbase_agentkit import (
     AgentKit,
     AgentKitConfig,
@@ -23,7 +24,7 @@ from coinbase_agentkit_langchain import get_langchain_tools
 from langchain.tools import StructuredTool
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.prebuilt import create_react_agent
 from langgraph.store.memory import InMemoryStore
 
@@ -31,11 +32,13 @@ from models import AgentMessage, UserMessage
 from prompts import SYSTEM_PROMPT
 from tools import downloader_action_provider, scraper_action_provider
 
+data_dir = path.join(path.dirname(path.dirname(__file__)), "data")
+database_dir = path.join(data_dir, "database")
+makedirs(database_dir, exist_ok=True)
+
 
 def create_wallet_provider() -> CdpWalletProvider:
     # Wallet dir/path
-    data_dir = path.join(path.dirname(path.dirname(__file__)), "data")
-    makedirs(data_dir, exist_ok=True)
     wallet_data_file = path.join(data_dir, "wallet_data.txt")
 
     # If existing, load Wallet
@@ -102,8 +105,9 @@ def create_tools(agentkit: AgentKit) -> list[StructuredTool]:
     return tools
 
 
-def create_short_term_memory():
-    memory = MemorySaver()
+async def create_short_term_memory():
+    db_path = path.join(database_dir, "mem.sqlite")
+    memory = AsyncSqliteSaver(connect(db_path))
     logger.info("Short-term Memory: ready")
     return memory
 
@@ -115,18 +119,23 @@ def create_long_term_memory():
 
 
 class Agent:
-    def __init__(self):
+    agent_executor = None
+
+    async def init(self):
         wallet = create_wallet_provider()
         agentkit = create_agentkit(wallet)
         tools = create_tools(agentkit)
+        short_term_memory = await create_short_term_memory()
+        long_term_memory = create_long_term_memory()
+
         self.agent_executor = create_react_agent(
             version="v1",
             name="aipfs-library-agent",
             prompt=SYSTEM_PROMPT,
             model=create_llm(),
             tools=tools,
-            checkpointer=create_short_term_memory(),
-            store=create_long_term_memory(),
+            checkpointer=short_term_memory,
+            store=long_term_memory,
         )
         logger.info("Agent: ready")
 
@@ -139,7 +148,7 @@ class Agent:
             )
         )
         ids = dict(user_id=msg.get("user_id"), chat_id=msg.get("chat_id"))
-        for chunk in self.agent_executor.stream(new_message, config):
+        async for chunk in self.agent_executor.astream(new_message, config):
             if "agent" in chunk:
                 content = chunk["agent"]["messages"][0].content.strip()
                 if content:
@@ -179,8 +188,9 @@ class Agent:
 
 async def chat_test(message: str):
     agent = Agent()
-    await agent.chat(dict(user_id="1", chat_id="1", message=message))
+    await agent.init()
+    await agent.chat(dict(user_id="tester", chat_id="1", message=message))
 
 
 if __name__ == "__main__":
-    asyncio.run(chat_test("Search torrents for: severance"))
+    run(chat_test("Search torrents for: severance"))
