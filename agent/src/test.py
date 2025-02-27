@@ -1,5 +1,5 @@
 from logging import getLogger
-from os import listdir, path
+from os import listdir, makedirs, path
 from pathlib import Path
 from shutil import rmtree
 
@@ -13,6 +13,7 @@ logger = getLogger("agent")
 from robyn import ALLOW_CORS, Request, Response, Robyn, status_codes
 from robyn.openapi import Components, OpenAPI, OpenAPIInfo
 from robyn.types import Body, JSONResponse
+
 from tests.ipfs import add_to_ipfs
 from tests.scraper import find_torrent_list
 from tests.torrent import download_torrent
@@ -43,7 +44,14 @@ app = Robyn(
 )
 ALLOW_CORS(app, origins=["*"])
 
-ROOT = Path(__file__).parent.resolve()
+DOWNLOAD_DIR = (
+    "/shared/downloads"
+    if path.exists("/shared")
+    else path.join(
+        path.dirname(path.dirname(path.dirname(__file__))), "shared/downloads"
+    )
+)
+makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 
 async def startup():
@@ -99,8 +107,7 @@ async def file_pin(request: Request, _: FileRequest):
             status_code=status_codes.HTTP_200_OK, headers={}, description="OK"
         )
     filename = request.json().get("filename")
-    download_dir = "/shared/downloads"
-    file_path = path.join(download_dir, filename)
+    file_path = path.join(DOWNLOAD_DIR, filename)
     if not path.exists(file_path):
         return JSONResponse(
             status_code=status_codes.HTTP_400_BAD_REQUEST,
@@ -129,8 +136,7 @@ async def file_rm(request: Request, _: FileRequest):
             status_code=status_codes.HTTP_200_OK, headers={}, description="OK"
         )
     filename = request.json().get("filename")
-    download_dir = "/shared/downloads"
-    file_path = Path(path.join(download_dir, filename))
+    file_path = Path(path.join(DOWNLOAD_DIR, filename))
     if file_path.exists():
         if file_path.is_dir():
             rmtree(file_path.as_posix())
@@ -145,9 +151,8 @@ async def file_rm(request: Request, _: FileRequest):
 
 @app.get("/v1/file/list")
 async def file_list():
-    download_dir = "/shared/downloads"
     try:
-        return JSONResponse({"files": listdir(download_dir)})
+        return JSONResponse({"files": listdir(DOWNLOAD_DIR)})
     except Exception as e:
         logger.error(f"Error listing files: {str(e)}")
         return Response(

@@ -1,5 +1,5 @@
-import asyncio
 import sys
+from asyncio import run
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
@@ -8,6 +8,7 @@ from typing import List, Optional
 from rich import print
 from rich.console import Console
 from rich.table import Table
+
 from src.tools.scraper import find_torrent_list
 
 
@@ -62,4 +63,4 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python src/tests/scraper.py <search>")
         exit(1)
-    asyncio.run(search(get_query()))
+    run(search(get_query()))

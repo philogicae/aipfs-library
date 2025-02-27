@@ -1,4 +1,4 @@
-import asyncio
+from asyncio import run
 from logging import getLogger
 from os import getenv
 from pathlib import Path
@@ -52,4 +52,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    run(main())
