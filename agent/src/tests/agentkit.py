@@ -1,8 +1,10 @@
+from asyncio import run
 from json import dumps
 from logging import getLogger
 from os import getenv, makedirs, path
 
 import coloredlogs
+from aiosqlite import connect
 from coinbase_agentkit import (
     AgentKit,
     AgentKitConfig,
@@ -19,7 +21,7 @@ from coinbase_agentkit_langchain import get_langchain_tools
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.prebuilt import create_react_agent
 from rich import print
 
@@ -28,11 +30,13 @@ coloredlogs.install()
 logger = getLogger("agent")
 
 data_dir = path.join(path.dirname(path.dirname(path.dirname(__file__))), "data")
-makedirs(data_dir, exist_ok=True)
+database_dir = path.join(data_dir, "database")
+makedirs(database_dir, exist_ok=True)
+db_path = path.join(database_dir, "mem.sqlite")
 wallet_data_file = path.join(data_dir, "wallet_data.txt")
 
 
-def initialize_agent():
+async def initialize_agent():
     # LLM
     llm = ChatOpenAI(model=getenv("OPENAI_API_MODEL"))
 
@@ -69,9 +73,9 @@ def initialize_agent():
     # Get Tools
     tools = get_langchain_tools(agentkit)
 
-    # Store buffered conversation history in memory.
-    memory = MemorySaver()
-    conf = {"configurable": {"thread_id": "CDP Agentkit Chatbot Example!"}}
+    # Store conversation history
+    memory = AsyncSqliteSaver(connect(db_path))
+    conf = {"configurable": {"thread_id": "1", "user_id": "tester"}}
 
     # Create ReAct Agent using the LLM and CDP Agentkit tools.
     return (
@@ -95,27 +99,30 @@ def initialize_agent():
     )
 
 
-def run_chat_mode():
-    agent_executor, config = initialize_agent()
+async def run_chat_mode():
+    agent_executor, config = await initialize_agent()
     print("Starting chat mode... Type 'exit' to end.")
     while True:
         try:
-            user_input = input("\nPrompt: ")
+            user_input = input("Prompt: ")
+            print("-------------------")
             if user_input.lower() == "exit":
                 break
-            for chunk in agent_executor.stream(
+            async for chunk in agent_executor.astream(
                 {"messages": [HumanMessage(content=user_input)]}, config
             ):
                 if "agent" in chunk:
-                    print("AGENT -------------")
-                    print(chunk["agent"]["messages"][0].content)
+                    msg = chunk["agent"]["messages"][0].content.strip()
+                    if msg:
+                        print(f"------ AGENT ------\n{msg}\n-------------------")
                 elif "tools" in chunk:
-                    print("TOOLS -------------")
-                    print(chunk["tools"]["messages"][0].content)
+                    msg = chunk["tools"]["messages"][0].content.strip()
+                    if msg:
+                        print(f"------ TOOLS ------\n{msg}\n-------------------")
         except KeyboardInterrupt:
             exit(0)
 
 
 if __name__ == "__main__":
     print("Starting Agent...")
-    run_chat_mode()
+    run(run_chat_mode())
