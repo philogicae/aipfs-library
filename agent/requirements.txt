@@ -1,8 +1,8 @@
 python-dotenv==1.0.1
 coloredlogs==15.0.1
-rich==13.9.4
-robyn==0.65.0
-Crawl4ai==0.4.248
+rich==14.0.0
+robyn==0.67.0
+Crawl4ai==0.6.3
 aioipfs==0.7.1
 torrentp==0.2.3
 aiosqlite==0.21.0
