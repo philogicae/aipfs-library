@@ -9,7 +9,7 @@ from urllib.parse import quote
 
 import coloredlogs
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 load_dotenv()
 coloredlogs.install()
@@ -143,15 +143,15 @@ PARAMS = dict(temperature=0.1, stream=False)
 
 class Torrent(BaseModel):
     filename: str
-    category: str | None
+    category: str | None = None
     date: str
     size: str
-    magnet_link: str | None
+    magnet_link: str | None = None
     seeders: int
     leechers: int
-    downloads: int | None
-    uploader: str | None
-    source: str
+    downloads: int | None = None
+    uploader: str | None = None
+    website_source: str
 
 
 class Results(BaseModel):
@@ -268,6 +268,10 @@ def extract_via_csv(text: str) -> list[dict]:
             row = line.split(";")
             torrent = dict(zip(headers, row))
             torrent["website_source"] = source
+            try:
+                Torrent.model_validate(torrent)
+            except ValidationError:
+                continue
             torrents.append(torrent)
     return torrents
 
@@ -302,8 +306,6 @@ async def find_torrent_list(
                 extracted_data = extract_with_llm(results, llm=llm)
             else:
                 extracted_data = extract_via_csv(results)
-            # print(extracted_data)
-            # exit()
             extracted_data = filtering_results(extracted_data)
             logger.info(
                 f"Successfully extracted results in {time() - start_time:.2f} sec."
