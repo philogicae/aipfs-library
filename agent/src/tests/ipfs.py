@@ -19,7 +19,7 @@ async def add_to_ipfs(
 ) -> dict[str, str]:
     if not Path(file_path).exists():
         logger.error(f"File not found: {file_path}")
-        return None
+        return {}
 
     files = {}
     try:
@@ -28,12 +28,14 @@ async def add_to_ipfs(
         async with client as ipfs:
             try:
                 logger.info(f"Adding file: {file_path}")
-                files = {}
                 async for added in ipfs.add(
                     file_path, pin=True, recursive=True, quieter=True
                 ):
+                    curr_hash, curr_name = added["Hash"], added["Name"]
+                    files[curr_name] = curr_hash
                     logger.info(f"File added/pinned: {added}")
-                    files[added["Name"]] = added["Hash"]
+                if curr_hash and curr_name:
+                    await ipfs.files.cp(f"/ipfs/{curr_hash}", f"/{curr_name}")
             except Exception as e:
                 logger.info(f"Failed to connect to IPFS node: {str(e)}")
     except Exception as e:

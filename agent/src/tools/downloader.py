@@ -20,9 +20,7 @@ from torrentp import TorrentDownloader
 DOWNLOAD_DIR = (
     "/shared/downloads"
     if path.exists("/shared")
-    else path.join(
-        path.dirname(path.dirname(path.dirname(__file__))), "shared/downloads"
-    )
+    else path.join(path.dirname(path.dirname(__file__)), "shared/downloads")
 )
 makedirs(DOWNLOAD_DIR, exist_ok=True)
 
@@ -54,7 +52,13 @@ def get_root_and_file(filename: str, file_list: list[str]) -> tuple[str, str]:
         messages=[
             {
                 "role": "system",
-                "content": f"Given a torrent filename and a file list, returns the absolute file path of the best video file match, and also the absolute path of the root (Always starting with /shared/downloads/ + <DIR-OR-FILE>) where the file is located. ALWAYS ONLY respond following STRICTLY the given output JSON schema:\n{dumps(File.model_json_schema()).replace(' ', '').replace('\n', '')}",
+                "content": (
+                    "Given a torrent filename and a file list, returns the absolute file path of "
+                    "the best file match, and also the absolute path of the root (Always starting "
+                    "with /shared/downloads/ + <DIR-OR-FILE>) where the file is located. "
+                    "ALWAYS ONLY respond following STRICTLY the given output JSON schema:\n"
+                    + f"{dumps(File.model_json_schema()).replace(' ', '').replace('\\n', '')}"
+                ),
             },
             {
                 "role": "user",
@@ -68,7 +72,7 @@ def get_root_and_file(filename: str, file_list: list[str]) -> tuple[str, str]:
     text = response.choices[0].message.content
     data = loads("{" + text.split("{", 1)[1].split("}")[0] + "}")
     root, file = data["root_path"], data["video_file_path"]
-    logger.info(f"Root: {root}\nVideo file: {file}")
+    logger.info(f"\nRoot: {root}\nTarget: {file}")
     return root, file
 
 
@@ -86,12 +90,14 @@ async def add_to_ipfs(
         async with client as ipfs:
             try:
                 logger.info(f"Adding file: {file_path}")
-                files = {}
                 async for added in ipfs.add(
-                    file_path, pin=True, recursive=True, quieter=True
+                    file_path, pin=True, recursive=True, quieter=True  # , no_copy=True
                 ):
+                    curr_hash, curr_name = added["Hash"], added["Name"]
+                    files[curr_name] = curr_hash
                     logger.info(f"File added/pinned: {added}")
-                    files[added["Name"]] = added["Hash"]
+                if curr_hash and curr_name:
+                    await ipfs.files.cp(f"/ipfs/{curr_hash}", f"/{curr_name}")
             except Exception as e:
                 logger.info(f"Failed to connect to IPFS node: {str(e)}")
     except Exception as e:
@@ -113,9 +119,9 @@ def rm(file_path: str):
 async def download(filename: str, magnet_link: str) -> dict[str, str]:
     await download_torrent(magnet_link)
     file_list = list_all_files()
-    root, file = get_root_and_file(filename, file_list)
+    _, file = get_root_and_file(filename, file_list)
     files = await add_to_ipfs(file)
-    rm(root)
+    # rm(root)
     return (
         {fname: f"https://ipfs.video/gw/{fhash}" for fname, fhash in files.items()}
         if files
@@ -141,12 +147,16 @@ class DownloaderActionProvider(ActionProvider[WalletProvider]):
     def __init__(self):
         super().__init__("downloader-action-provider", [])
 
-    def supports_network(self, *args, **kwargs) -> bool:
+    def supports_network(self, *_args, **_kwargs) -> bool:
         return True
 
     @create_action(
         name="download-to-ipfs",
-        description="""This tool will download a torrent file using the provided filename and magnet link and add it to IPFS, returning a dictionary with the added files' names and links.""",
+        description=(
+            "This tool will download a torrent file using the provided filename "
+            "and magnet link and add it to IPFS, returning a dictionary with the "
+            "added files' names and links."
+        ),
         schema=DownloadToIPFSSchema,
     )
     def download_to_ipfs(self, args: dict[str, Any]) -> str:

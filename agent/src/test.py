@@ -13,7 +13,6 @@ logger = getLogger("agent")
 from robyn import ALLOW_CORS, Request, Response, Robyn, status_codes
 from robyn.openapi import Components, OpenAPI, OpenAPIInfo
 from robyn.types import Body, JSONResponse
-
 from tests.ipfs import add_to_ipfs
 from tests.scraper import find_torrent_list
 from tests.torrent import download_torrent
@@ -47,9 +46,7 @@ ALLOW_CORS(app, origins=["*"])
 DOWNLOAD_DIR = (
     "/shared/downloads"
     if path.exists("/shared")
-    else path.join(
-        path.dirname(path.dirname(path.dirname(__file__))), "shared/downloads"
-    )
+    else path.join(path.dirname(path.dirname(__file__)), "shared/downloads")
 )
 makedirs(DOWNLOAD_DIR, exist_ok=True)
 
