@@ -126,11 +126,6 @@ MODELS = dict(
         api_token=getenv("GROQ_API_KEY"),
         model=getenv("GROQ_API_MODEL_SCRAPER"),
     ),
-    hyperbolic=dict(
-        api_url=getenv("HYPERBOLIC_API_BASE"),
-        api_token=getenv("HYPERBOLIC_API_KEY"),
-        model=getenv("HYPERBOLIC_API_MODEL"),
-    ),
     gemini=dict(
         api_url=getenv("GEMINI_API_BASE"),
         api_token=getenv("GEMINI_API_KEY"),
