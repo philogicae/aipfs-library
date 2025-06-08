@@ -38,7 +38,7 @@ def list_all_files() -> list[str]:
     for root, _dirs, files in walk(DOWNLOAD_DIR):
         for file in files:
             file_paths.append(path.join(root, file))
-    print("Files found:", file_paths)
+    logger.info(f"Files found: {file_paths}")
     return file_paths
 
 
@@ -68,7 +68,7 @@ def get_root_and_file(filename: str, file_list: list[str]) -> tuple[str, str]:
     text = response.choices[0].message.content
     data = loads("{" + text.split("{", 1)[1].split("}")[0] + "}")
     root, file = data["root_path"], data["video_file_path"]
-    print(f"Root: {root}\nVideo file: {file}")
+    logger.info(f"Root: {root}\nVideo file: {file}")
     return root, file
 
 
@@ -87,7 +87,7 @@ async def add_to_ipfs(
             try:
                 logger.info(f"Adding file: {file_path}")
                 files = {}
-                async for added in ipfs.core.add(
+                async for added in ipfs.add(
                     file_path, pin=True, recursive=True, quieter=True
                 ):
                     logger.info(f"File added/pinned: {added}")
@@ -97,12 +97,13 @@ async def add_to_ipfs(
     except Exception as e:
         logger.info(f"Failed to interact with IPFS node: {str(e)}")
         logger.info(f"Error type: {type(e).__name__}")
+    await client.close()
     return files
 
 
 def rm(file_path: str):
     if Path(file_path).exists():
-        print(f"Deleting: {file_path}")
+        logger.info(f"Deleting: {file_path}")
         if Path(file_path).is_dir():
             rmtree(file_path)
         else:
