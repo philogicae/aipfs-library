@@ -20,7 +20,9 @@ from torrentp import TorrentDownloader
 DOWNLOAD_DIR = (
     "/shared/downloads"
     if path.exists("/shared")
-    else path.join(path.dirname(path.dirname(__file__)), "shared/downloads")
+    else path.join(
+        path.dirname(path.dirname(path.dirname(__file__))), "shared/downloads"
+    )
 )
 makedirs(DOWNLOAD_DIR, exist_ok=True)
 
@@ -88,21 +90,20 @@ async def add_to_ipfs(
         client = AsyncIPFS(host=host, port=port)
         logger.info(f"Connecting to IPFS node at {host}:{port}...")
         async with client as ipfs:
-            try:
-                logger.info(f"Adding file: {file_path}")
-                async for added in ipfs.add(
-                    file_path, pin=True, recursive=True, quieter=True  # , no_copy=True
-                ):
-                    curr_hash, curr_name = added["Hash"], added["Name"]
-                    files[curr_name] = curr_hash
-                    logger.info(f"File added/pinned: {added}")
-                if curr_hash and curr_name:
+            logger.info(f"Adding file: {file_path}")
+            async for added in ipfs.add(
+                file_path, pin=True, recursive=True, quieter=True, no_copy=True
+            ):
+                curr_hash, curr_name = added["Hash"], added["Name"]
+                files[curr_name] = curr_hash
+                logger.info(f"File added/pinned: {added}")
+            if curr_hash and curr_name:
+                try:
                     await ipfs.files.cp(f"/ipfs/{curr_hash}", f"/{curr_name}")
-            except Exception as e:
-                logger.info(f"Failed to connect to IPFS node: {str(e)}")
+                except:
+                    pass
     except Exception as e:
         logger.info(f"Failed to interact with IPFS node: {str(e)}")
-        logger.info(f"Error type: {type(e).__name__}")
     await client.close()
     return files
 
