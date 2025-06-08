@@ -2,6 +2,7 @@ from asyncio import run
 from logging import getLogger
 from os import getenv
 from pathlib import Path
+from sys import argv
 
 import coloredlogs
 from dotenv import load_dotenv
@@ -28,7 +29,7 @@ async def add_to_ipfs(
             try:
                 logger.info(f"Adding file: {file_path}")
                 files = {}
-                async for added in ipfs.core.add(
+                async for added in ipfs.add(
                     file_path, pin=True, recursive=True, quieter=True
                 ):
                     logger.info(f"File added/pinned: {added}")
@@ -38,11 +39,12 @@ async def add_to_ipfs(
     except Exception as e:
         logger.info(f"Failed to interact with IPFS node: {str(e)}")
         logger.info(f"Error type: {type(e).__name__}")
+    await client.close()
     return files
 
 
 async def main():
-    test_file = __file__
+    test_file = argv[1]
     files = await add_to_ipfs(test_file)
     if files:
         for fname, fhash in files.items():
